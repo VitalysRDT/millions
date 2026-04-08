@@ -1,6 +1,7 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useLobbyState } from "@/hooks/use-lobby-state";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { LobbyWaiting } from "@/components/lobby/lobby-waiting";
@@ -15,11 +16,24 @@ export default function MillionairePage({
 }) {
   const { code } = use(params);
   const upper = code.toUpperCase();
+  const router = useRouter();
   const { user, isAuthed, isLoading: userLoading } = useCurrentUser();
-  const { state, error } = useLobbyState(upper, 1200);
+  const { state, error } = useLobbyState(isAuthed ? upper : null, 1200);
 
-  if (userLoading) return null;
-  if (!isAuthed || !user) return <p className="p-10 text-center">Connexion requise</p>;
+  useEffect(() => {
+    if (!userLoading && !isAuthed) {
+      router.replace("/login");
+    }
+  }, [userLoading, isAuthed, router]);
+
+  if (userLoading || !isAuthed || !user) {
+    return (
+      <>
+        <SiteHeader />
+        <p className="p-10 text-center text-white/40 text-sm">Chargement...</p>
+      </>
+    );
+  }
   if (error) {
     return (
       <p className="p-10 text-center text-danger">

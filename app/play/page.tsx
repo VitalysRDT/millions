@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Crown, Anchor, ArrowRight, KeyRound } from "lucide-react";
@@ -19,9 +19,19 @@ export default function PlayHubPage() {
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!isLoading && !isAuthed) {
-    router.replace("/login");
-    return null;
+  useEffect(() => {
+    if (!isLoading && !isAuthed) {
+      router.replace("/login");
+    }
+  }, [isLoading, isAuthed, router]);
+
+  if (isLoading || !isAuthed || !user) {
+    return (
+      <>
+        <SiteHeader />
+        <p className="p-10 text-center text-white/40 text-sm">Chargement...</p>
+      </>
+    );
   }
 
   const create = async (gameType: "millionaire" | "battleship") => {

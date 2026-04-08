@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { mutate } from "swr";
 import { postJson } from "@/lib/utils/fetcher";
 import Link from "next/link";
 
@@ -20,8 +21,22 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
     try {
-      await postJson<LoginResponse>("/api/auth/login", { pseudo: pseudo.trim() });
-      router.push("/play");
+      const me = await postJson<LoginResponse>("/api/auth/login", {
+        pseudo: pseudo.trim(),
+      });
+      // Prime the SWR cache for /api/auth/me so /play sees us authed immediately,
+      // then revalidate to fetch the full profile (with stats).
+      await mutate(
+        "/api/auth/me",
+        {
+          userId: me.userId,
+          pseudo: me.pseudo,
+          avatarSeed: me.avatarSeed,
+          stats: { totalGames: 0, totalWins: 0, bestScore: 0 },
+        },
+        { revalidate: true },
+      );
+      router.replace("/play");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur inconnue");
     } finally {
