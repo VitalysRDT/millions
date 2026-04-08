@@ -21,21 +21,23 @@ export default function LeaderboardPage() {
   return (
     <>
       <SiteHeader />
-      <main className="px-6 py-16">
+      <main className="px-3 sm:px-6 py-8 sm:py-16">
         <div className="max-w-3xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
+            className="text-center mb-8 sm:mb-12"
           >
-            <Trophy className="w-14 h-14 text-gold mx-auto mb-4" />
-            <h1 className="text-display text-5xl font-bold mb-2">
+            <Trophy className="w-12 h-12 sm:w-14 sm:h-14 text-gold mx-auto mb-3 sm:mb-4" />
+            <h1 className="text-display text-3xl sm:text-5xl font-bold mb-2">
               <span className="text-gold-gradient">Classement</span>
             </h1>
-            <p className="text-white/50">Les meilleurs gains au Millionnaire</p>
+            <p className="text-white/50 text-sm sm:text-base">
+              Les meilleurs gains au Millionnaire
+            </p>
           </motion.div>
 
-          <div className="surface-elevated rounded-3xl p-4">
+          <div className="surface-elevated rounded-2xl sm:rounded-3xl p-3 sm:p-4">
             {isLoading && (
               <p className="text-center text-white/40 py-12">Chargement...</p>
             )}
@@ -53,28 +55,30 @@ export default function LeaderboardPage() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.02 }}
-                    className={`flex items-center gap-4 px-4 py-3 rounded-xl ${
+                    className={`flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl ${
                       podium
                         ? "bg-gold/10 border border-gold/30"
                         : "bg-white/[0.03]"
                     }`}
                   >
                     <span
-                      className={`w-8 text-center font-bold ${
+                      className={`w-6 sm:w-8 text-center font-bold ${
                         i === 0
-                          ? "text-gold text-xl"
+                          ? "text-gold text-lg sm:text-xl"
                           : i === 1
-                            ? "text-white/80 text-lg"
+                            ? "text-white/80 text-base sm:text-lg"
                             : i === 2
-                              ? "text-white/60 text-lg"
-                              : "text-white/40"
+                              ? "text-white/60 text-base sm:text-lg"
+                              : "text-white/40 text-sm"
                       }`}
                     >
                       {i + 1}
                     </span>
-                    <Avatar seed={e.avatarSeed} pseudo={e.pseudo} size={36} />
-                    <span className="flex-1 font-medium text-white/90">{e.pseudo}</span>
-                    <span className="font-mono text-gold font-semibold">
+                    <Avatar seed={e.avatarSeed} pseudo={e.pseudo} size={32} />
+                    <span className="flex-1 font-medium text-white/90 text-sm sm:text-base truncate">
+                      {e.pseudo}
+                    </span>
+                    <span className="font-mono text-gold font-semibold text-sm sm:text-base flex-shrink-0">
                       {e.score.toLocaleString("fr-FR")} €
                     </span>
                   </motion.div>

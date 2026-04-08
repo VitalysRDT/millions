@@ -131,22 +131,24 @@ export function PlacementBoard({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-3xl mx-auto px-6 py-10"
+      className="max-w-3xl mx-auto px-3 sm:px-6 py-6 sm:py-10"
     >
-      <h2 className="text-display text-3xl font-bold text-center mb-2">Place ta flotte</h2>
-      <p className="text-center text-white/50 text-sm mb-8">
+      <h2 className="text-display text-2xl sm:text-3xl font-bold text-center mb-2">
+        Place ta flotte
+      </h2>
+      <p className="text-center text-white/50 text-xs sm:text-sm mb-6 sm:mb-8 px-2">
         {!allPlaced && currentSize !== undefined
           ? `Place ton bateau de ${currentSize} cases (${remainingFleet.length} restant${remainingFleet.length > 1 ? "s" : ""})`
           : "Flotte prête !"}
       </p>
 
-      <div className="flex flex-col items-center gap-6">
+      <div className="flex flex-col items-center gap-5 sm:gap-6">
         <Grid
           cells={grid}
           onCellClick={click}
           onCellHover={(x, y) => setHover([x, y])}
           onCellLeave={() => setHover(null)}
-          cellPx={38}
+          maxWidthPx={460}
         />
 
         <div className="flex flex-wrap gap-2 justify-center">
@@ -166,18 +168,20 @@ export function PlacementBoard({
           ))}
         </div>
 
-        <div className="flex gap-3">
-          <Button onClick={() => setHorizontal(!horizontal)} variant="ghost" size="md">
+        <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
+          <Button onClick={() => setHorizontal(!horizontal)} variant="ghost" size="sm">
             <RotateCw className="w-4 h-4" />
-            {horizontal ? "Horizontal" : "Vertical"}
+            <span className="hidden sm:inline">{horizontal ? "Horizontal" : "Vertical"}</span>
+            <span className="sm:hidden">{horizontal ? "H" : "V"}</span>
           </Button>
-          <Button onClick={auto} variant="ghost" size="md">
+          <Button onClick={auto} variant="ghost" size="sm">
             <Shuffle className="w-4 h-4" />
-            Aléatoire
+            <span className="hidden sm:inline">Aléatoire</span>
+            <span className="sm:hidden">Auto</span>
           </Button>
-          <Button onClick={reset} variant="ghost" size="md">
+          <Button onClick={reset} variant="ghost" size="sm">
             <Trash2 className="w-4 h-4" />
-            Effacer
+            <span className="hidden sm:inline">Effacer</span>
           </Button>
         </div>
 
@@ -186,7 +190,7 @@ export function PlacementBoard({
           disabled={!allPlaced || submitting}
           variant="gold"
           size="lg"
-          className="min-w-[240px]"
+          className="w-full max-w-xs sm:min-w-[240px] sm:w-auto"
         >
           {submitting ? "Validation..." : "Valider la flotte"}
         </Button>

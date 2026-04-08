@@ -40,8 +40,9 @@ export function AnswerButton({
       whileHover={isInteractive ? { scale: 1.02, y: -2 } : {}}
       whileTap={state === "idle" ? { scale: 0.98 } : {}}
       className={cn(
-        "relative group w-full h-20 md:h-24 flex items-center gap-5 pl-4 pr-6 md:pl-5 md:pr-8",
-        "rounded-2xl border-2 text-left transition-all overflow-hidden",
+        "relative group w-full h-16 sm:h-20 md:h-24 flex items-center gap-3 sm:gap-4 md:gap-5",
+        "pl-3 pr-4 sm:pl-4 sm:pr-6 md:pl-5 md:pr-8",
+        "rounded-xl sm:rounded-2xl border-2 text-left transition-all overflow-hidden",
         state === "idle" &&
           "bg-gradient-to-br from-bg-card/95 to-bg-deep/90 border-bg-border hover:border-gold/70",
         state === "selected" &&
@@ -54,28 +55,24 @@ export function AnswerButton({
         state === "hidden" && "bg-bg-surface/30 border-bg-border line-through grayscale",
       )}
     >
-      {/* Glow trail on hover */}
       {isInteractive && (
         <span className="absolute inset-0 bg-gradient-to-r from-gold/0 via-gold/10 to-gold/0 opacity-0 group-hover:opacity-100 transition-opacity" />
       )}
       <span
         className={cn(
-          "relative flex-shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center font-bold text-xl md:text-2xl border-2 transition-all",
-          state === "correct" &&
-            "bg-success text-bg-deep border-success",
-          state === "wrong" &&
-            "bg-danger text-bg-deep border-danger",
-          state === "selected" &&
-            "bg-gold-gradient text-bg-deep border-gold shadow-gold",
-          state === "idle" &&
-            "bg-bg-deep/80 text-gold border-gold/40 group-hover:border-gold group-hover:bg-gold/15",
+          "relative flex-shrink-0 rounded-full flex items-center justify-center font-bold border-2 transition-all",
+          "w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 text-lg sm:text-xl md:text-2xl",
+          state === "correct" && "bg-success text-bg-deep border-success",
+          state === "wrong" && "bg-danger text-bg-deep border-danger",
+          state === "selected" && "bg-gold-gradient text-bg-deep border-gold shadow-gold",
+          state === "idle" && "bg-bg-deep/80 text-gold border-gold/40 group-hover:border-gold group-hover:bg-gold/15",
           state === "locked" && "bg-white/5 text-white/40 border-white/10",
           state === "hidden" && "bg-white/5 text-white/30 border-white/10",
         )}
       >
         {LETTERS[index]}
       </span>
-      <span className="relative font-medium text-base md:text-lg text-white/95 leading-snug">
+      <span className="relative font-medium text-sm sm:text-base md:text-lg text-white/95 leading-snug min-w-0 flex-1">
         {text}
       </span>
     </motion.button>

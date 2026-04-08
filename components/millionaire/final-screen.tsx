@@ -16,15 +16,15 @@ export function FinalScreen({ state }: { state: LobbyState }) {
   });
   const winner = state.players.find((p) => p.userId === m.winnerUserId);
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-16">
+    <div className="min-h-screen flex items-center justify-center px-3 sm:px-6 py-8 sm:py-16">
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
         className="w-full max-w-2xl text-center"
       >
-        <Trophy className="w-20 h-20 text-gold mx-auto mb-6" />
-        <h1 className="text-display text-5xl font-bold mb-3">
+        <Trophy className="w-16 h-16 sm:w-20 sm:h-20 text-gold mx-auto mb-4 sm:mb-6" />
+        <h1 className="text-display text-3xl sm:text-5xl font-bold mb-2 sm:mb-3">
           {winner ? (
             <>
               <span className="text-gold-gradient">{winner.pseudo}</span> remporte
@@ -34,7 +34,7 @@ export function FinalScreen({ state }: { state: LobbyState }) {
           )}
         </h1>
         {winner && (
-          <p className="text-3xl font-mono text-gold mb-12">
+          <p className="text-2xl sm:text-3xl font-mono text-gold mb-8 sm:mb-12">
             {(() => {
               const winnerState = m.playerStates.find((p) => p.userId === winner.userId);
               const prize = winnerState?.alive
@@ -45,8 +45,8 @@ export function FinalScreen({ state }: { state: LobbyState }) {
           </p>
         )}
 
-        <div className="surface-elevated rounded-3xl p-6 mb-8">
-          <h3 className="text-sm uppercase tracking-widest text-white/40 mb-4">
+        <div className="surface-elevated rounded-2xl sm:rounded-3xl p-4 sm:p-6 mb-6 sm:mb-8">
+          <h3 className="text-xs sm:text-sm uppercase tracking-widest text-white/40 mb-3 sm:mb-4">
             Classement final
           </h3>
           <div className="space-y-2">
@@ -58,14 +58,16 @@ export function FinalScreen({ state }: { state: LobbyState }) {
               return (
                 <div
                   key={ps.userId}
-                  className="flex items-center gap-4 px-4 py-3 rounded-xl bg-white/[0.04]"
+                  className="flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-white/[0.04]"
                 >
-                  <span className="font-bold text-2xl text-gold w-8 text-center">
+                  <span className="font-bold text-xl sm:text-2xl text-gold w-6 sm:w-8 text-center">
                     {i + 1}
                   </span>
-                  <Avatar seed={meta.avatarSeed} pseudo={meta.pseudo} size={36} />
-                  <span className="flex-1 text-left font-medium">{meta.pseudo}</span>
-                  <span className="font-mono text-gold">
+                  <Avatar seed={meta.avatarSeed} pseudo={meta.pseudo} size={32} />
+                  <span className="flex-1 text-left font-medium text-sm sm:text-base truncate">
+                    {meta.pseudo}
+                  </span>
+                  <span className="font-mono text-gold text-sm sm:text-base flex-shrink-0">
                     {prize.toLocaleString("fr-FR")} €
                   </span>
                 </div>

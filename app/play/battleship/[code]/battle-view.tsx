@@ -129,17 +129,21 @@ export function BattleView({
   if (bs.phase === "finished") {
     const won = bs.winnerUserId === myUserId;
     return (
-      <div className="min-h-[80vh] flex items-center justify-center px-6">
+      <div className="min-h-[80vh] flex items-center justify-center px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center max-w-md"
         >
-          <Trophy className={`w-20 h-20 mx-auto mb-6 ${won ? "text-gold" : "text-white/30"}`} />
-          <h1 className="text-display text-5xl font-bold mb-3">
+          <Trophy
+            className={`w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-6 ${
+              won ? "text-gold" : "text-white/30"
+            }`}
+          />
+          <h1 className="text-display text-4xl sm:text-5xl font-bold mb-3">
             {won ? "Victoire" : "Défaite"}
           </h1>
-          <p className="text-white/50 mb-8">
+          <p className="text-white/50 mb-8 px-4">
             {won
               ? `Tu as coulé toute la flotte de ${opponent.pseudo}.`
               : `${opponent.pseudo} t'a coulé.`}
@@ -153,63 +157,61 @@ export function BattleView({
   }
 
   return (
-    <div className="px-6 py-8 max-w-6xl mx-auto">
-      <div className="text-center mb-8">
-        <p className="text-xs uppercase tracking-widest text-white/40 mb-2">
+    <div className="px-3 sm:px-6 py-5 sm:py-8 max-w-6xl mx-auto">
+      <div className="text-center mb-5 sm:mb-8">
+        <p className="text-[10px] sm:text-xs uppercase tracking-widest text-white/40 mb-1 sm:mb-2">
           Tour {bs.turnNumber}
         </p>
-        <h2 className="text-display text-3xl font-bold">
+        <h2 className="text-display text-2xl sm:text-3xl font-bold">
           {myTurn ? (
             <span className="text-gold-gradient">À toi de jouer</span>
           ) : (
-            <span className="text-white/60">Tour de {opponent.pseudo}</span>
+            <span className="text-white/60 truncate inline-block max-w-full">
+              Tour de {opponent.pseudo}
+            </span>
           )}
         </h2>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-8 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
         {/* Enemy grid (target) */}
         <div className="text-center">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <Crosshair className="w-4 h-4 text-danger" />
-            <h3 className="text-sm uppercase tracking-widest text-white/60">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+            <Crosshair className="w-4 h-4 text-danger flex-shrink-0" />
+            <h3 className="text-xs sm:text-sm uppercase tracking-wider sm:tracking-widest text-white/60 truncate">
               Flotte ennemie · {opponent.pseudo}
             </h3>
           </div>
-          <div className="flex justify-center">
-            <Grid
-              cells={enemyGrid}
-              cellPx={32}
-              onCellClick={shootMode ? fireAt : undefined}
-              onCellHover={(x, y) => setHover([x, y])}
-              onCellLeave={() => setHover(null)}
-              highlight={previewCells}
-            />
-          </div>
-          <p className="text-xs text-white/40 mt-3">
+          <Grid
+            cells={enemyGrid}
+            maxWidthPx={420}
+            onCellClick={shootMode ? fireAt : undefined}
+            onCellHover={(x, y) => setHover([x, y])}
+            onCellLeave={() => setHover(null)}
+            highlight={previewCells}
+          />
+          <p className="text-xs text-white/40 mt-2 sm:mt-3">
             {bs.shipsStatus[opponent.userId]?.remaining ?? 5} bateau(x) restant(s)
           </p>
         </div>
 
         {/* My grid */}
         <div className="text-center">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <Anchor className="w-4 h-4 text-gold" />
-            <h3 className="text-sm uppercase tracking-widest text-white/60">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+            <Anchor className="w-4 h-4 text-gold flex-shrink-0" />
+            <h3 className="text-xs sm:text-sm uppercase tracking-wider sm:tracking-widest text-white/60">
               Ta flotte
             </h3>
           </div>
-          <div className="flex justify-center">
-            <Grid cells={myGrid} cellPx={32} />
-          </div>
-          <p className="text-xs text-white/40 mt-3">
+          <Grid cells={myGrid} maxWidthPx={420} />
+          <p className="text-xs text-white/40 mt-2 sm:mt-3">
             {bs.shipsStatus[myUserId]?.remaining ?? 5} bateau(x) restant(s)
           </p>
         </div>
       </div>
 
       {/* Action panel */}
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto px-1 sm:px-0">
         {myTurn && bs.questionPhase === "idle" && !shootMode && (
           <DifficultyPicker onPick={askQuestion} disabled={busy} />
         )}
@@ -222,18 +224,19 @@ export function BattleView({
           />
         )}
         {myTurn && shootMode && (
-          <p className="text-center text-gold animate-pulse">
+          <p className="text-center text-gold animate-pulse text-sm sm:text-base">
             Bonne réponse ! Choisis une cellule pour tirer.
           </p>
         )}
         {!myTurn && (
-          <div className="text-center surface rounded-2xl p-6 flex items-center justify-center gap-4">
-            <Avatar seed={opponent.avatarSeed} pseudo={opponent.pseudo} size={40} />
-            <p className="text-white/60">{opponent.pseudo} prépare son tir...</p>
+          <div className="text-center surface rounded-2xl p-4 sm:p-6 flex items-center justify-center gap-3 sm:gap-4">
+            <Avatar seed={opponent.avatarSeed} pseudo={opponent.pseudo} size={36} />
+            <p className="text-white/60 text-sm sm:text-base truncate">
+              {opponent.pseudo} prépare son tir...
+            </p>
           </div>
         )}
       </div>
-      {/* Hide unused vars warnings */}
       <span className="hidden">{me.pseudo}</span>
     </div>
   );

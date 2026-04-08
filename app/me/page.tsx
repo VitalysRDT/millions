@@ -31,21 +31,23 @@ export default function MePage() {
   return (
     <>
       <SiteHeader />
-      <main className="px-6 py-16">
+      <main className="px-3 sm:px-6 py-8 sm:py-16">
         <div className="max-w-3xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-6 mb-12"
+            className="flex items-center gap-4 sm:gap-6 mb-8 sm:mb-12"
           >
-            <Avatar seed={user.avatarSeed} pseudo={user.pseudo} size={88} />
-            <div>
-              <h1 className="text-display text-4xl font-bold mb-1">{user.pseudo}</h1>
-              <p className="text-white/50 text-sm">Joueur Millions</p>
+            <Avatar seed={user.avatarSeed} pseudo={user.pseudo} size={72} />
+            <div className="min-w-0">
+              <h1 className="text-display text-2xl sm:text-4xl font-bold mb-0.5 sm:mb-1 truncate">
+                {user.pseudo}
+              </h1>
+              <p className="text-white/50 text-xs sm:text-sm">Joueur Millions</p>
             </div>
           </motion.div>
 
-          <div className="grid grid-cols-3 gap-4 mb-12">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8 sm:mb-12">
             <Stat icon={GamepadIcon} label="Parties" value={user.stats.totalGames.toString()} />
             <Stat icon={Award} label="Victoires" value={user.stats.totalWins.toString()} />
             <Stat
@@ -55,10 +57,10 @@ export default function MePage() {
             />
           </div>
 
-          <h2 className="text-sm uppercase tracking-widest text-white/40 mb-3">
+          <h2 className="text-xs sm:text-sm uppercase tracking-widest text-white/40 mb-3">
             Historique
           </h2>
-          <div className="surface-elevated rounded-3xl p-4">
+          <div className="surface-elevated rounded-2xl sm:rounded-3xl p-3 sm:p-4">
             {!hist?.entries.length && (
               <p className="text-center text-white/40 py-12">Aucune partie pour l'instant.</p>
             )}
@@ -66,24 +68,24 @@ export default function MePage() {
               {hist?.entries.map((e) => (
                 <div
                   key={e.id}
-                  className="flex items-center gap-4 px-4 py-3 rounded-xl bg-white/[0.03]"
+                  className="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-white/[0.03] text-xs sm:text-sm"
                 >
-                  <span className="text-xs uppercase tracking-wider text-white/40 w-24">
-                    {e.gameType === "millionaire" ? "Millionnaire" : "Bataille"}
+                  <span className="uppercase tracking-wider text-white/40 w-16 sm:w-24 text-[10px] sm:text-xs flex-shrink-0">
+                    {e.gameType === "millionaire" ? "Millions" : "Bataille"}
                   </span>
                   <span
-                    className={`text-xs font-semibold ${
+                    className={`font-semibold text-[10px] sm:text-xs flex-shrink-0 ${
                       e.isWinner ? "text-success" : "text-white/40"
                     }`}
                   >
                     {e.isWinner ? "Victoire" : "Défaite"}
                   </span>
-                  <span className="ml-auto font-mono text-gold">
+                  <span className="ml-auto font-mono text-gold text-xs sm:text-sm">
                     {e.gameType === "millionaire"
                       ? `${e.score.toLocaleString("fr-FR")} €`
                       : ""}
                   </span>
-                  <span className="text-xs text-white/30">
+                  <span className="text-[10px] sm:text-xs text-white/30 flex-shrink-0">
                     {new Date(e.endedAt).toLocaleDateString("fr-FR")}
                   </span>
                 </div>
@@ -98,10 +100,12 @@ export default function MePage() {
 
 function Stat({ icon: Icon, label, value }: { icon: typeof Trophy; label: string; value: string }) {
   return (
-    <div className="surface-elevated rounded-2xl p-5 text-center">
-      <Icon className="w-5 h-5 text-gold mx-auto mb-2" />
-      <p className="text-white/40 text-xs uppercase tracking-wider mb-1">{label}</p>
-      <p className="font-mono font-bold text-xl text-white">{value}</p>
+    <div className="surface-elevated rounded-xl sm:rounded-2xl p-3 sm:p-5 text-center">
+      <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-gold mx-auto mb-1.5 sm:mb-2" />
+      <p className="text-white/40 text-[9px] sm:text-xs uppercase tracking-wider mb-0.5 sm:mb-1">
+        {label}
+      </p>
+      <p className="font-mono font-bold text-sm sm:text-xl text-white truncate">{value}</p>
     </div>
   );
 }

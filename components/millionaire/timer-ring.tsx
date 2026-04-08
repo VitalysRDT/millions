@@ -4,14 +4,14 @@ import { motion } from "framer-motion";
 import { useCountdown } from "@/hooks/use-countdown";
 import { QUESTION_TIMER_MS } from "@/lib/games/millionaire/constants";
 
-export function TimerRing({ deadlineAt, size = 144 }: { deadlineAt: number; size?: number }) {
+export function TimerRing({ deadlineAt }: { deadlineAt: number }) {
   const remaining = useCountdown(deadlineAt);
   const total = QUESTION_TIMER_MS / 1000;
   const ratio = Math.max(0, Math.min(1, remaining / total));
+  // Internal SVG coordinate system — we let Tailwind w/h scale it.
+  const VIEW = 144;
   const stroke = 8;
-  const radius = (size - stroke * 2) / 2;
-  const cx = size / 2;
-  const cy = size / 2;
+  const radius = (VIEW - stroke * 2) / 2;
   const circ = 2 * Math.PI * radius;
   const offset = circ * (1 - ratio);
   const danger = remaining <= 5;
@@ -21,18 +21,16 @@ export function TimerRing({ deadlineAt, size = 144 }: { deadlineAt: number; size
     <motion.div
       animate={danger ? { scale: [1, 1.06, 1] } : {}}
       transition={{ duration: 0.8, repeat: danger ? Infinity : 0 }}
-      className="relative inline-flex items-center justify-center"
-      style={{ width: size, height: size }}
+      className="relative inline-flex items-center justify-center w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36"
     >
-      {/* Outer glow */}
       <span
         className="absolute inset-0 rounded-full blur-2xl"
         style={{ background: `radial-gradient(circle, ${color}55 0%, transparent 70%)` }}
       />
-      <svg viewBox={`0 0 ${size} ${size}`} className="relative -rotate-90 w-full h-full">
+      <svg viewBox={`0 0 ${VIEW} ${VIEW}`} className="relative -rotate-90 w-full h-full">
         <circle
-          cx={cx}
-          cy={cy}
+          cx={VIEW / 2}
+          cy={VIEW / 2}
           r={radius}
           stroke="rgba(255,255,255,0.07)"
           strokeWidth={stroke}
@@ -46,8 +44,8 @@ export function TimerRing({ deadlineAt, size = 144 }: { deadlineAt: number; size
           </linearGradient>
         </defs>
         <circle
-          cx={cx}
-          cy={cy}
+          cx={VIEW / 2}
+          cy={VIEW / 2}
           r={radius}
           stroke={danger ? color : "url(#ring-gold)"}
           strokeWidth={stroke}
@@ -63,13 +61,13 @@ export function TimerRing({ deadlineAt, size = 144 }: { deadlineAt: number; size
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span
-          className={`text-5xl md:text-6xl font-bold font-mono leading-none ${
+          className={`text-3xl sm:text-5xl md:text-6xl font-bold font-mono leading-none ${
             danger ? "text-danger" : "text-white"
           }`}
         >
           {remaining}
         </span>
-        <span className="mt-1 text-[10px] uppercase tracking-[0.25em] text-white/40">
+        <span className="mt-0.5 sm:mt-1 text-[8px] sm:text-[10px] uppercase tracking-[0.2em] sm:tracking-[0.25em] text-white/40">
           secondes
         </span>
       </div>

@@ -66,28 +66,30 @@ export function LobbyWaiting({
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-12">
+    <div className="max-w-3xl mx-auto px-3 sm:px-6 py-6 sm:py-12">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-center mb-10"
       >
-        <p className="text-white/40 text-xs uppercase tracking-widest mb-3">
+        <p className="text-white/40 text-[10px] sm:text-xs uppercase tracking-widest mb-2 sm:mb-3 px-4">
           Lobby — {state.gameType === "millionaire" ? "Qui veut gagner des millions" : "Bataille navale"}
         </p>
-        <h1 className="text-display text-4xl md:text-5xl font-bold mb-6">Code de la partie</h1>
+        <h1 className="text-display text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6">
+          Code de la partie
+        </h1>
 
         <button
           onClick={copy}
-          className="group inline-flex items-center gap-3 px-8 py-5 rounded-2xl bg-gold/10 border-2 border-gold/30 hover:border-gold/60 transition"
+          className="group inline-flex items-center gap-2 sm:gap-3 px-5 py-3 sm:px-8 sm:py-5 rounded-2xl bg-gold/10 border-2 border-gold/30 hover:border-gold/60 transition"
         >
-          <span className="font-mono text-4xl font-bold tracking-[0.4em] text-gold-gradient">
+          <span className="font-mono text-2xl sm:text-4xl font-bold tracking-[0.3em] sm:tracking-[0.4em] text-gold-gradient">
             {state.code}
           </span>
           {copied ? (
-            <Check className="w-5 h-5 text-success" />
+            <Check className="w-5 h-5 text-success flex-shrink-0" />
           ) : (
-            <Copy className="w-5 h-5 text-white/40 group-hover:text-gold transition" />
+            <Copy className="w-5 h-5 text-white/40 group-hover:text-gold transition flex-shrink-0" />
           )}
         </button>
         <p className="text-white/40 text-xs mt-3">
@@ -95,41 +97,43 @@ export function LobbyWaiting({
         </p>
       </motion.div>
 
-      <div className="surface-elevated rounded-3xl p-6 mb-6">
-        <h2 className="text-sm uppercase tracking-widest text-white/40 mb-4">
+      <div className="surface-elevated rounded-2xl sm:rounded-3xl p-4 sm:p-6 mb-5 sm:mb-6">
+        <h2 className="text-xs sm:text-sm uppercase tracking-widest text-white/40 mb-3 sm:mb-4">
           Joueurs ({state.players.length}/{state.maxPlayers})
         </h2>
         <div className="space-y-2">
           {slots.map((p, i) => (
             <div
               key={i}
-              className={`flex items-center gap-4 px-4 py-3 rounded-xl ${
+              className={`flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl ${
                 p ? "bg-white/[0.04]" : "bg-white/[0.01] border border-dashed border-white/10"
               }`}
             >
               {p ? (
                 <>
-                  <Avatar seed={p.avatarSeed} pseudo={p.pseudo} size={40} />
-                  <div className="flex-1">
+                  <Avatar seed={p.avatarSeed} pseudo={p.pseudo} size={36} />
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-white">{p.pseudo}</span>
+                      <span className="font-semibold text-white truncate text-sm sm:text-base">
+                        {p.pseudo}
+                      </span>
                       {state.hostUserId === p.userId && (
-                        <Crown className="w-4 h-4 text-gold" />
+                        <Crown className="w-4 h-4 text-gold flex-shrink-0" />
                       )}
                     </div>
                   </div>
                   <span
-                    className={`text-xs uppercase tracking-wider px-3 py-1 rounded-full font-medium ${
+                    className={`text-[10px] sm:text-xs uppercase tracking-wider px-2 sm:px-3 py-1 rounded-full font-medium flex-shrink-0 ${
                       p.isReady
                         ? "bg-success/15 text-success"
                         : "bg-white/[0.05] text-white/40"
                     }`}
                   >
-                    {p.isReady ? "Prêt" : "En attente"}
+                    {p.isReady ? "Prêt" : "Attente"}
                   </span>
                 </>
               ) : (
-                <span className="text-white/30 text-sm italic mx-auto">
+                <span className="text-white/30 text-xs sm:text-sm italic mx-auto">
                   Slot libre
                 </span>
               )}

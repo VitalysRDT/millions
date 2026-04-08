@@ -71,31 +71,35 @@ export default function PlayHubPage() {
   return (
     <>
       <SiteHeader />
-      <main className="px-6 py-16">
+      <main className="px-4 sm:px-6 py-8 sm:py-16">
         <div className="max-w-5xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-14"
+            className="text-center mb-8 sm:mb-14"
           >
-            <h1 className="text-display text-5xl md:text-6xl font-bold mb-3">
+            <h1 className="text-display text-3xl sm:text-5xl md:text-6xl font-bold mb-2 sm:mb-3">
               Salut, <span className="text-gold-gradient">{user?.pseudo}</span>
             </h1>
-            <p className="text-white/50">Crée une partie ou rejoins un code.</p>
+            <p className="text-white/50 text-sm sm:text-base">
+              Crée une partie ou rejoins un code.
+            </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-6 mb-12">
+          <div className="grid sm:grid-cols-2 gap-4 sm:gap-6 mb-8 sm:mb-12">
             <motion.button
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 }}
               onClick={() => create("millionaire")}
               disabled={creating !== null}
-              className="text-left surface-elevated rounded-3xl p-8 hover:border-gold/40 transition group disabled:opacity-50"
+              className="text-left surface-elevated rounded-2xl sm:rounded-3xl p-5 sm:p-8 hover:border-gold/40 transition group disabled:opacity-50"
             >
-              <Crown className="w-10 h-10 text-gold mb-4" />
-              <h3 className="text-display text-2xl font-bold mb-2">Qui veut gagner des millions</h3>
-              <p className="text-white/50 text-sm mb-6">
+              <Crown className="w-9 h-9 sm:w-10 sm:h-10 text-gold mb-3 sm:mb-4" />
+              <h3 className="text-display text-xl sm:text-2xl font-bold mb-2">
+                Qui veut gagner des millions
+              </h3>
+              <p className="text-white/50 text-xs sm:text-sm mb-4 sm:mb-6">
                 Lobby battle royale 2-8 joueurs, 15 questions, 1M€ à la clé.
               </p>
               <div className="text-gold text-sm font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
@@ -110,11 +114,13 @@ export default function PlayHubPage() {
               transition={{ delay: 0.1 }}
               onClick={() => create("battleship")}
               disabled={creating !== null}
-              className="text-left surface-elevated rounded-3xl p-8 hover:border-gold/40 transition group disabled:opacity-50"
+              className="text-left surface-elevated rounded-2xl sm:rounded-3xl p-5 sm:p-8 hover:border-gold/40 transition group disabled:opacity-50"
             >
-              <Anchor className="w-10 h-10 text-gold mb-4" />
-              <h3 className="text-display text-2xl font-bold mb-2">Bataille navale à questions</h3>
-              <p className="text-white/50 text-sm mb-6">
+              <Anchor className="w-9 h-9 sm:w-10 sm:h-10 text-gold mb-3 sm:mb-4" />
+              <h3 className="text-display text-xl sm:text-2xl font-bold mb-2">
+                Bataille navale à questions
+              </h3>
+              <p className="text-white/50 text-xs sm:text-sm mb-4 sm:mb-6">
                 Duel 1v1, chaque tir débloqué par une bonne réponse.
               </p>
               <div className="text-gold text-sm font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
@@ -128,13 +134,13 @@ export default function PlayHubPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="surface-elevated rounded-3xl p-8"
+            className="surface-elevated rounded-2xl sm:rounded-3xl p-5 sm:p-8"
           >
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-3 sm:mb-4">
               <KeyRound className="w-5 h-5 text-gold" />
-              <h3 className="text-xl font-semibold">Rejoindre un lobby</h3>
+              <h3 className="text-lg sm:text-xl font-semibold">Rejoindre un lobby</h3>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
                 value={joinCode}
