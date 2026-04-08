@@ -47,9 +47,9 @@ export const BattleshipAnswerInput = z.object({
 });
 
 export const ShootInput = z.object({
-  cells: z
-    .array(z.tuple([z.number().int().min(0).max(9), z.number().int().min(0).max(9)]))
-    .min(1)
-    .max(5),
+  origin: z.tuple([
+    z.number().int().min(0).max(9),
+    z.number().int().min(0).max(9),
+  ]),
   clientIdemKey: z.string().min(8).max(64),
 });

@@ -1,6 +1,9 @@
 import { redis } from "@/lib/redis/client";
 import { k } from "@/lib/redis/keys";
-import { applyLobbyMutation } from "@/lib/redis/lobby-state";
+import {
+  applyLobbyMutation,
+  getLobbyState,
+} from "@/lib/redis/lobby-state";
 import {
   difficultyForRound,
   QUESTION_TIMER_MS,
@@ -130,11 +133,13 @@ interface AnswerOptions {
 
 /**
  * Records a player answer.
- * The chosen index is stored in a PRIVATE per-player Redis key — never in the public lobby JSON.
+ *
+ * IMPORTANT (B3 fix): the chosen index is written to Redis INSIDE the lock,
+ * BEFORE flipping hasAnswered=true. This guarantees that any subsequent
+ * resolver call will find the answer in Redis.
  */
 export async function recordAnswer(opts: AnswerOptions): Promise<{ accepted: boolean }> {
-  let gameId: string | null = null;
-  await applyLobbyMutation(opts.code, (state) => {
+  await applyLobbyMutation(opts.code, async (state) => {
     const m = state.millionaire;
     if (!m) throw new Error("no_game");
     if (m.round !== opts.round) throw new Error("stale_round");
@@ -144,24 +149,30 @@ export async function recordAnswer(opts: AnswerOptions): Promise<{ accepted: boo
     if (!ps) throw new Error("not_in_game");
     if (!ps.alive) throw new Error("eliminated");
     if (ps.hasAnswered) return state;
-    ps.hasAnswered = true;
-    gameId = m.gameId;
-    return state;
-  });
 
-  if (gameId) {
+    // Write the chosen index to Redis BEFORE flipping hasAnswered.
     await redis().set(
-      k.gamePlayerAnswer(gameId, opts.round, opts.userId),
+      k.gamePlayerAnswer(m.gameId, opts.round, opts.userId),
       String(opts.chosenIndex),
       { ex: 3600 },
     );
-  }
+    ps.hasAnswered = true;
+    return state;
+  });
+
   await maybeResolveRound(opts.code).catch(() => undefined);
   return { accepted: true };
 }
 
 /**
  * If all alive players answered OR deadline passed, transition to revealing.
+ *
+ * (B1 fix) Per-player correct index: players who used the switch joker have
+ * their own correct answer in a per-user Redis key. We fetch the right key
+ * for each player before comparing.
+ *
+ * (B17 fix) hasAnswered is NOT reset here — it stays true through the reveal
+ * and is only reset when advancing to the next round.
  */
 export async function maybeResolveRound(code: string): Promise<{ advanced: boolean }> {
   let advanced = false;
@@ -175,47 +186,73 @@ export async function maybeResolveRound(code: string): Promise<{ advanced: boole
     if (!allAnswered && Date.now() < m.deadlineAt) return state;
 
     const r = redis();
-    const correctRaw = await r.get<string | number>(k.gameCorrect(m.gameId, m.round));
-    const correctIdx = Number(correctRaw);
+    const sharedCorrect = Number(
+      await r.get<string | number>(k.gameCorrect(m.gameId, m.round)),
+    );
 
-    // Fetch every alive player's stored answer
+    // Fetch every player's chosen index AND their per-player correct.
     const chosenByUser = new Map<string, number | null>();
+    const correctByUser = new Map<string, number>();
     await Promise.all(
       m.playerStates.map(async (p) => {
+        // Chosen
         if (!p.alive) {
           chosenByUser.set(p.userId, null);
-          return;
+        } else {
+          const v = await r.get<string | number>(
+            k.gamePlayerAnswer(m.gameId, m.round, p.userId),
+          );
+          chosenByUser.set(p.userId, v == null ? null : Number(v));
         }
-        const v = await r.get<string | number>(
-          k.gamePlayerAnswer(m.gameId, m.round, p.userId),
-        );
-        chosenByUser.set(p.userId, v == null ? null : Number(v));
+        // Correct index — per-user if player used switch, else shared
+        if (p.overrideQuestion) {
+          const pv = await r.get<string | number>(
+            k.gameCorrectPerUser(m.gameId, m.round, p.userId),
+          );
+          correctByUser.set(
+            p.userId,
+            pv == null ? sharedCorrect : Number(pv),
+          );
+        } else {
+          correctByUser.set(p.userId, sharedCorrect);
+        }
       }),
     );
 
     const perPlayer = m.playerStates.map((p) => {
       const chosen = chosenByUser.get(p.userId) ?? null;
-      const correct = chosen !== null && chosen === correctIdx;
-      return { userId: p.userId, chosenIndex: chosen, correct };
+      const playerCorrect = correctByUser.get(p.userId) ?? sharedCorrect;
+      const correct = chosen !== null && chosen === playerCorrect;
+      return {
+        userId: p.userId,
+        chosenIndex: chosen,
+        correct,
+        correctIndex: playerCorrect,
+      };
     });
 
     m.playerStates.forEach((p) => {
       if (!p.alive) return;
       const chosen = chosenByUser.get(p.userId);
-      const correct = chosen !== null && chosen !== undefined && chosen === correctIdx;
+      const playerCorrect = correctByUser.get(p.userId) ?? sharedCorrect;
+      const correct =
+        chosen !== null && chosen !== undefined && chosen === playerCorrect;
       if (correct) {
         p.currentTier = m.round;
       } else {
         p.alive = false;
         p.finalPrizeEur = safetyPrizeForTier(p.currentTier);
+        p.eliminatedAtRound = m.round;
       }
-      p.hasAnswered = false;
-      delete p.fiftyHidden;
-      delete p.publicVote;
-      delete p.phoneFriend;
+      // NOTE: hasAnswered stays true during reveal (fixes B17).
+      // It gets reset only when advancing to the next round.
     });
 
-    m.lastReveal = { round: m.round, correctIndex: correctIdx, perPlayer };
+    m.lastReveal = {
+      round: m.round,
+      correctIndex: sharedCorrect,
+      perPlayer,
+    };
     m.roundState = "revealing";
     m.revealReleaseAt = Date.now() + REVEAL_DURATION_MS;
     advanced = true;
@@ -224,15 +261,25 @@ export async function maybeResolveRound(code: string): Promise<{ advanced: boole
   return { advanced };
 }
 
-/** When the reveal duration is over, advance to next round (or finish). */
+/**
+ * When the reveal duration is over, advance to next round (or finish).
+ *
+ * (B14 fix) Use getLobbyState for the peek — no need for a second lock.
+ * (B15 fix) Clean up per-user correct keys when moving to the next round.
+ */
 export async function maybeAdvanceAfterReveal(code: string): Promise<{ advanced: boolean }> {
   let advanced = false;
   let pickedNext: RawQ | null = null;
-  // We need to pick a question outside the lock to keep critical section short.
-  // First peek at state to know what we'll need.
-  const peek = await applyLobbyMutation(code, (state) => state);
+
+  const peek = await getLobbyState(code);
+  if (!peek) return { advanced: false };
   const peekM = peek.millionaire;
-  if (peekM && peekM.roundState === "revealing" && peekM.revealReleaseAt && Date.now() >= peekM.revealReleaseAt) {
+  if (
+    peekM &&
+    peekM.roundState === "revealing" &&
+    peekM.revealReleaseAt &&
+    Date.now() >= peekM.revealReleaseAt
+  ) {
     const aliveCount = peekM.playerStates.filter((p) => p.alive).length;
     if (aliveCount > 0 && peekM.round < 15) {
       const nextRound = peekM.round + 1;
@@ -275,13 +322,16 @@ export async function maybeAdvanceAfterReveal(code: string): Promise<{ advanced:
 
       const lobby = await getLobbyByCode(code);
       if (lobby) {
+        // (B8 fix) Use per-player eliminatedAtRound instead of m.round
         const finals = m.playerStates.map((p) => ({
           userId: p.userId,
           tier: p.currentTier,
           prize: p.alive
             ? TIERS_EUR[p.currentTier - 1] ?? 0
             : p.finalPrizeEur ?? 0,
-          eliminatedAtRound: p.alive ? null : m.round,
+          eliminatedAtRound: p.alive
+            ? null
+            : p.eliminatedAtRound ?? m.round,
         }));
         await finishMillionaireGame({
           gameId: m.gameId,
@@ -296,6 +346,19 @@ export async function maybeAdvanceAfterReveal(code: string): Promise<{ advanced:
     }
 
     if (!pickedNext) return state;
+
+    // (B15 fix) Clean up per-user override correct keys from the round we're leaving
+    const r = redis();
+    const toDel: string[] = [];
+    m.playerStates.forEach((p) => {
+      if (p.overrideQuestion) {
+        toDel.push(k.gameCorrectPerUser(m.gameId, m.round, p.userId));
+      }
+    });
+    if (toDel.length > 0) {
+      await r.del(...toDel);
+    }
+
     const nextRound = m.round + 1;
     const { pub, correctIdx } = await persistRoundQuestion(m.gameId, nextRound, pickedNext);
     void correctIdx;
@@ -305,6 +368,8 @@ export async function maybeAdvanceAfterReveal(code: string): Promise<{ advanced:
     m.roundState = "answering";
     m.revealReleaseAt = undefined;
     m.playerStates.forEach((p) => {
+      // Reset per-round state for all players (including hasAnswered for B17)
+      p.hasAnswered = false;
       delete p.overrideQuestion;
       delete p.fiftyHidden;
       delete p.publicVote;
@@ -321,4 +386,37 @@ export async function tickMillionaire(code: string): Promise<void> {
   const r1 = await maybeResolveRound(code).catch(() => ({ advanced: false }));
   if (r1.advanced) return;
   await maybeAdvanceAfterReveal(code).catch(() => undefined);
+}
+
+/**
+ * (B12 support) Mark a player as having forfeited mid-game.
+ * Called from the leave route when a player leaves a running millionaire game.
+ */
+export async function forfeitMillionairePlayer(
+  code: string,
+  userId: string,
+): Promise<void> {
+  let shouldFinalize = false;
+  await applyLobbyMutation(code, (state) => {
+    const m = state.millionaire;
+    if (!m) return state;
+    if (state.status !== "playing") return state;
+    const ps = m.playerStates.find((p) => p.userId === userId);
+    if (!ps || !ps.alive) return state;
+    ps.alive = false;
+    ps.finalPrizeEur = safetyPrizeForTier(ps.currentTier);
+    ps.eliminatedAtRound = m.round;
+    // If no one is alive anymore, push reveal release to now so the next
+    // tick finalizes the game.
+    const aliveCount = m.playerStates.filter((p) => p.alive).length;
+    if (aliveCount === 0) {
+      m.roundState = "revealing";
+      m.revealReleaseAt = Date.now();
+      shouldFinalize = true;
+    }
+    return state;
+  });
+  if (shouldFinalize) {
+    await maybeAdvanceAfterReveal(code).catch(() => undefined);
+  }
 }

@@ -8,6 +8,8 @@ export const k = {
   userRecentQ: (userId: string) => `user:${userId}:recent_q`,
   codeReserved: (code: string) => `code:${code}`,
   gameCorrect: (gameId: string, round: number) => `game:${gameId}:q:${round}:correct`,
+  gameCorrectPerUser: (gameId: string, round: number, userId: string) =>
+    `game:${gameId}:q:${round}:correct:${userId}`,
   gameOrder: (gameId: string, round: number) => `game:${gameId}:q:${round}:order`,
   gamePlayerAnswer: (gameId: string, round: number, userId: string) =>
     `game:${gameId}:q:${round}:ans:${userId}`,

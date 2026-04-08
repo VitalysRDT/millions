@@ -20,6 +20,7 @@ export async function applyJoker(
   if (!m) throw new Error("no_game");
   const ps = m.playerStates.find((p) => p.userId === userId);
   if (!ps) throw new Error("not_in_game");
+  if (!ps.alive) throw new Error("eliminated"); // (B11 fix)
   if (!ps.jokersRemaining.includes(joker)) throw new Error("joker_used");
   if (m.roundState !== "answering") throw new Error("not_answering");
 
@@ -43,7 +44,12 @@ export async function applyJoker(
         difficulty: picked.difficulty,
       };
       switchCorrect = order.indexOf(0);
-      await r.set(k.gameCorrect(m.gameId, m.round) + `:${userId}`, switchCorrect, { ex: 3600 });
+      // (B1 fix) Use the dedicated per-user key helper
+      await r.set(
+        k.gameCorrectPerUser(m.gameId, m.round, userId),
+        switchCorrect,
+        { ex: 3600 },
+      );
     }
   }
 

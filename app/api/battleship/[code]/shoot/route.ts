@@ -23,7 +23,7 @@ export async function POST(
       const out = await fireShot({
         code: code.toUpperCase(),
         userId: user.id,
-        cells: body.cells.map(([x, y]) => [x, y] as [number, number]),
+        origin: [body.origin[0], body.origin[1]],
       });
       return out;
     } catch (e) {

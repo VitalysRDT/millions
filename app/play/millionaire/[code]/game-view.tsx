@@ -72,6 +72,11 @@ export function GameView({
   const myReveal = m.lastReveal?.perPlayer.find((p) => p.userId === myUserId);
   const isRevealing = m.roundState === "revealing";
   const question = me?.overrideQuestion ?? m.question;
+  // (B2 fix) Use per-player correct index for switch joker users; fall back
+  // to the shared one if not present (older state or no switch used).
+  const myRevealedCorrectIdx = isRevealing
+    ? (myReveal?.correctIndex ?? m.lastReveal?.correctIndex)
+    : undefined;
 
   return (
     <div className="stage-bg min-h-[calc(100vh-4rem)]">
@@ -139,7 +144,7 @@ export function GameView({
             totalRounds={15}
             selectedIdx={isRevealing ? (myReveal?.chosenIndex ?? null) : pendingChoice}
             hiddenIndexes={me?.fiftyHidden}
-            revealedCorrectIdx={isRevealing ? m.lastReveal?.correctIndex : undefined}
+            revealedCorrectIdx={myRevealedCorrectIdx}
             myChoiceWasCorrect={myReveal?.correct}
             onSelect={select}
             publicVote={me?.publicVote}

@@ -33,18 +33,27 @@ export interface MillionairePlayerStateLite {
   alive: boolean;
   hasAnswered: boolean;
   jokersRemaining: ("fifty" | "public" | "phone" | "switch")[];
-  fiftyHidden?: number[]; // visible only to player ideally; we keep simple
+  /** Only present on the player's own entry after server redaction. */
+  fiftyHidden?: number[];
   publicVote?: number[];
   phoneFriend?: { confidence: number; guess: number; quote: string };
-  // override question per-player when 'switch' joker used
+  /** Override question per-player when 'switch' joker used. Redacted for others. */
   overrideQuestion?: MillionaireQuestionPublic;
   finalPrizeEur?: number;
+  /** Round at which this player was eliminated (1-based). */
+  eliminatedAtRound?: number;
 }
 
 export interface LastReveal {
   round: number;
   correctIndex: number;
-  perPlayer: { userId: string; chosenIndex: number | null; correct: boolean }[];
+  perPlayer: {
+    userId: string;
+    chosenIndex: number | null;
+    correct: boolean;
+    /** Per-player correct index (may differ from top-level for switch joker users). */
+    correctIndex?: number;
+  }[];
 }
 
 export interface MillionaireSection {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import useSWR from "swr";
 import type { LobbyState, BattleshipQuestionPublic } from "@/lib/games/shared/types";
 import { Grid, type GridCellState } from "@/components/battleship/grid";
 import { GRID_SIZE } from "@/lib/games/battleship/constants";
@@ -13,6 +14,10 @@ import { Avatar } from "@/components/common/avatar";
 import { nanoid } from "nanoid";
 import { expandPattern } from "@/lib/games/battleship/shot-resolver";
 import Link from "next/link";
+
+interface MyShipsResponse {
+  ships: { size: number; cells: [number, number][] }[];
+}
 
 function emptyGrid(): GridCellState[][] {
   return Array.from({ length: GRID_SIZE }, () =>
@@ -62,6 +67,15 @@ export function BattleView({
     return () => clearInterval(id);
   }, [state.code]);
 
+  // (B5 fix) Fetch my own ships so I can see my fleet on my grid
+  const { data: myShipsData } = useSWR<MyShipsResponse>(
+    `/api/battleship/${state.code}/my-ships`,
+  );
+  const myShipCells = new Set<string>();
+  for (const ship of myShipsData?.ships ?? []) {
+    for (const [x, y] of ship.cells) myShipCells.add(`${x},${y}`);
+  }
+
   // Build grids
   const enemyGrid: GridCellState[][] = (() => {
     const g = emptyGrid();
@@ -73,6 +87,13 @@ export function BattleView({
 
   const myGrid: GridCellState[][] = (() => {
     const g = emptyGrid();
+    // (B5 fix) Draw my own ships first, then overlay hits/misses
+    for (const key of myShipCells) {
+      const [xs, ys] = key.split(",");
+      const x = Number(xs);
+      const y = Number(ys);
+      if (Number.isInteger(x) && Number.isInteger(y)) g[x]![y] = "ship";
+    }
     for (const c of bs.publicGrids[myUserId] ?? []) {
       g[c.x]![c.y] = c.result === "miss" ? "miss" : c.result === "sunk" ? "sunk" : "hit";
     }
@@ -112,9 +133,9 @@ export function BattleView({
     if (busy) return;
     setBusy(true);
     try {
-      const cells = expandPattern([x, y], reward);
+      // (B4 fix) Send only the origin. Server expands and validates.
       await postJson(`/api/battleship/${state.code}/shoot`, {
-        cells,
+        origin: [x, y],
         clientIdemKey: idemRef.current + ":shot",
       });
       setShootMode(false);

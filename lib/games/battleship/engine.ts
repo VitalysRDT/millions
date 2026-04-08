@@ -1,6 +1,6 @@
 import { redis } from "@/lib/redis/client";
 import { k } from "@/lib/redis/keys";
-import { applyLobbyMutation } from "@/lib/redis/lobby-state";
+import { applyLobbyMutation, getLobbyState } from "@/lib/redis/lobby-state";
 import {
   createBattleshipGame,
   finishBattleshipGame,
@@ -12,7 +12,6 @@ import {
 import { shuffleIndices } from "@/lib/games/shared/shuffle";
 import {
   patternForDifficulty,
-  patternCellCount,
   QUESTION_TIMER_MS,
   type ShotPattern,
 } from "./constants";
@@ -87,21 +86,28 @@ export async function placeFleet(opts: {
     cells: s.cells,
     hits: [],
   }));
-  // Save to redis (private)
-  const peek = await applyLobbyMutation(opts.code, (state) => state);
+  // Peek to validate phase + membership before any writes
+  const peek = await getLobbyState(opts.code);
+  if (!peek) throw new Error("lobby_not_found");
   const m = peek.battleship;
   if (!m) throw new Error("no_game");
+  // (B10 fix) Must be a lobby member
+  if (!peek.players.find((p) => p.userId === opts.userId))
+    throw new Error("not_in_lobby");
+  // (B9 fix) Must be in placement phase
+  if (m.phase !== "placement") throw new Error("not_in_placement");
+
+  // Save to redis (private) + DB
   await saveShips(m.gameId, opts.userId, internal);
-  // Persist to DB for audit/recovery
   await saveBattleshipGrid({ gameId: m.gameId, userId: opts.userId, ships: internal });
 
   return applyLobbyMutation(opts.code, (state) => {
     const bs = state.battleship!;
+    if (bs.phase !== "placement") return state;
     bs.placedReady[opts.userId] = true;
     bs.shipsStatus[opts.userId] = { remaining: 5, sunk: [] };
     if (Object.values(bs.placedReady).every(Boolean)) {
       bs.phase = "battle";
-      // Random first turn
       const ids = state.players.map((p) => p.userId);
       bs.currentTurnUserId = ids[Math.floor(Math.random() * ids.length)] ?? null;
       bs.turnNumber = 1;
@@ -204,15 +210,21 @@ export async function answerBattleshipQuestion(opts: {
   return { correct, canShoot: correct };
 }
 
+/**
+ * Fire a shot. (B4 fix) The client now sends only an ORIGIN cell, and the
+ * server expands it into the actual cells based on the reward pattern. This
+ * prevents a malicious client from firing arbitrary cells.
+ */
 export async function fireShot(opts: {
   code: string;
   userId: string;
-  cells: [number, number][];
+  origin: [number, number];
 }): Promise<{
   results: { x: number; y: number; result: "miss" | "hit" | "sunk"; shipSize?: number }[];
   gameOver: boolean;
 }> {
-  const peek = await applyLobbyMutation(opts.code, (state) => state);
+  const peek = await getLobbyState(opts.code);
+  if (!peek) throw new Error("lobby_not_found");
   const bs = peek.battleship;
   if (!bs) throw new Error("no_game");
   if (bs.phase !== "battle") throw new Error("not_in_battle");
@@ -221,19 +233,16 @@ export async function fireShot(opts: {
   if (!bs.currentQuestion) throw new Error("no_question");
   const reward = bs.currentQuestion.patternReward;
 
-  validateShotCells(opts.cells, reward);
-  const allowed = patternCellCount(reward);
-  if (opts.cells.length > allowed) throw new Error("too_many_cells");
+  // Server-side expansion — client cannot cheat by crafting arbitrary cells
+  const cells = expandPattern(opts.origin, reward);
+  validateShotCells(cells, reward);
 
   const opponent = peek.players.find((p) => p.userId !== opts.userId);
   if (!opponent) throw new Error("no_opponent");
   const enemyShips = await loadShips(bs.gameId, opponent.userId);
   if (!enemyShips) throw new Error("opponent_grid_missing");
 
-  // Single-cell uses raw cells. Pattern-based: caller may pass single origin
-  // and we expand server-side, OR caller passes already-expanded cells.
-  // We accept "expanded by client" as long as we re-validate count + bounds.
-  const { results, allSunk } = applyShots(enemyShips, opts.cells);
+  const { results, allSunk } = applyShots(enemyShips, cells);
   await saveShips(bs.gameId, opponent.userId, enemyShips);
 
   let gameOver = false;
@@ -315,3 +324,58 @@ export async function tickBattleship(code: string): Promise<void> {
 // re-export PlacedShip for routes
 export type { PlacedShip };
 export { expandPattern };
+
+/**
+ * (B12 support) When a player leaves a running battleship game, the other
+ * player wins by forfeit. Finalises the DB game row and lobby status.
+ */
+export async function forfeitBattleship(
+  code: string,
+  leavingUserId: string,
+): Promise<void> {
+  let opponentUserId: string | null = null;
+  let gameId: string | null = null;
+  let turnCount = 0;
+
+  await applyLobbyMutation(code, (state) => {
+    const bs = state.battleship;
+    if (!bs) return state;
+    if (state.status !== "playing") return state;
+    const opponent = state.players.find((p) => p.userId !== leavingUserId);
+    if (!opponent) return state;
+    opponentUserId = opponent.userId;
+    gameId = bs.gameId;
+    turnCount = bs.turnNumber;
+    bs.phase = "finished";
+    bs.winnerUserId = opponent.userId;
+    bs.currentTurnUserId = null;
+    bs.questionPhase = "idle";
+    bs.currentQuestion = undefined;
+    bs.deadlineAt = undefined;
+    state.status = "finished";
+    state.endedAt = Date.now();
+    return state;
+  });
+
+  if (opponentUserId && gameId) {
+    const lobby = await getLobbyByCode(code);
+    if (lobby) {
+      await finishBattleshipGame({
+        gameId,
+        lobbyId: lobby.id,
+        winnerUserId: opponentUserId,
+        loserUserId: leavingUserId,
+        turns: turnCount,
+      });
+      await setLobbyStatus(lobby.id, "finished");
+    }
+  }
+}
+
+/** Exposed for the /my-ships endpoint (B5). */
+export async function getPlayerShips(
+  gameId: string,
+  userId: string,
+): Promise<InternalShipState[] | null> {
+  return loadShips(gameId, userId);
+}
