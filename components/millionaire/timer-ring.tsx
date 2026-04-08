@@ -1,51 +1,78 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { useCountdown } from "@/hooks/use-countdown";
 import { QUESTION_TIMER_MS } from "@/lib/games/millionaire/constants";
 
-export function TimerRing({ deadlineAt }: { deadlineAt: number }) {
+export function TimerRing({ deadlineAt, size = 144 }: { deadlineAt: number; size?: number }) {
   const remaining = useCountdown(deadlineAt);
   const total = QUESTION_TIMER_MS / 1000;
   const ratio = Math.max(0, Math.min(1, remaining / total));
-  const radius = 36;
+  const stroke = 8;
+  const radius = (size - stroke * 2) / 2;
+  const cx = size / 2;
+  const cy = size / 2;
   const circ = 2 * Math.PI * radius;
   const offset = circ * (1 - ratio);
   const danger = remaining <= 5;
+  const color = danger ? "#ff5470" : "#f5c542";
 
   return (
-    <div className="relative w-24 h-24">
-      <svg viewBox="0 0 100 100" className="transform -rotate-90 w-full h-full">
+    <motion.div
+      animate={danger ? { scale: [1, 1.06, 1] } : {}}
+      transition={{ duration: 0.8, repeat: danger ? Infinity : 0 }}
+      className="relative inline-flex items-center justify-center"
+      style={{ width: size, height: size }}
+    >
+      {/* Outer glow */}
+      <span
+        className="absolute inset-0 rounded-full blur-2xl"
+        style={{ background: `radial-gradient(circle, ${color}55 0%, transparent 70%)` }}
+      />
+      <svg viewBox={`0 0 ${size} ${size}`} className="relative -rotate-90 w-full h-full">
         <circle
-          cx="50"
-          cy="50"
+          cx={cx}
+          cy={cy}
           r={radius}
-          stroke="rgba(255,255,255,0.08)"
-          strokeWidth="6"
+          stroke="rgba(255,255,255,0.07)"
+          strokeWidth={stroke}
           fill="none"
         />
+        <defs>
+          <linearGradient id="ring-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ffe28a" />
+            <stop offset="50%" stopColor="#f5c542" />
+            <stop offset="100%" stopColor="#c8941b" />
+          </linearGradient>
+        </defs>
         <circle
-          cx="50"
-          cy="50"
+          cx={cx}
+          cy={cy}
           r={radius}
-          stroke={danger ? "#ff5470" : "#f5c542"}
-          strokeWidth="6"
+          stroke={danger ? color : "url(#ring-gold)"}
+          strokeWidth={stroke}
           fill="none"
           strokeLinecap="round"
           strokeDasharray={circ}
           strokeDashoffset={offset}
           style={{
-            transition: "stroke-dashoffset 0.2s linear, stroke 0.2s",
-            filter: danger ? "drop-shadow(0 0 8px #ff5470)" : "drop-shadow(0 0 8px #f5c542)",
+            transition: "stroke-dashoffset 0.25s linear, stroke 0.2s",
+            filter: `drop-shadow(0 0 14px ${color})`,
           }}
         />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span
-          className={`text-3xl font-bold font-mono ${danger ? "text-danger" : "text-white"}`}
+          className={`text-5xl md:text-6xl font-bold font-mono leading-none ${
+            danger ? "text-danger" : "text-white"
+          }`}
         >
           {remaining}
         </span>
+        <span className="mt-1 text-[10px] uppercase tracking-[0.25em] text-white/40">
+          secondes
+        </span>
       </div>
-    </div>
+    </motion.div>
   );
 }

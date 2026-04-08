@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import type { LobbyState } from "@/lib/games/shared/types";
 import { TimerRing } from "@/components/millionaire/timer-ring";
 import { QuestionCard } from "@/components/millionaire/question-card";
@@ -26,7 +27,6 @@ export function GameView({
   const idemRef = useRef<string>(nanoid());
   const lastRoundRef = useRef<number>(m.round);
 
-  // Reset local state on round change
   useEffect(() => {
     if (lastRoundRef.current !== m.round) {
       lastRoundRef.current = m.round;
@@ -36,7 +36,6 @@ export function GameView({
     }
   }, [m.round]);
 
-  // Periodic tick to ensure deadlines advance even if no one acts
   useEffect(() => {
     const id = setInterval(() => {
       postJson(`/api/millionaire/${state.code}/tick`, {}).catch(() => undefined);
@@ -74,16 +73,47 @@ export function GameView({
   const question = me?.overrideQuestion ?? m.question;
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] px-6 py-8">
+    <div className="stage-bg min-h-[calc(100vh-4rem)]">
       <RevealOverlay state={state} myUserId={myUserId} />
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-8">
-        {/* MAIN */}
-        <div className="flex flex-col items-center gap-8">
-          <div className="flex items-center gap-8">
-            {!isRevealing && <TimerRing deadlineAt={m.deadlineAt} />}
-          </div>
+      <div className="max-w-[1500px] mx-auto px-4 md:px-8 py-6 md:py-10 grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-8 xl:gap-10">
+        {/* MAIN COLUMN */}
+        <div className="flex flex-col gap-8 md:gap-10 items-center">
+          {/* HEADER ZONE */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12"
+          >
+            <div className="text-center md:text-right md:order-1 order-2">
+              <p className="text-[10px] uppercase tracking-[0.3em] text-white/40 mb-1">
+                Round
+              </p>
+              <p className="text-display text-4xl md:text-5xl font-bold text-gold-gradient leading-none">
+                {m.round.toString().padStart(2, "0")}
+                <span className="text-white/30 text-xl md:text-2xl ml-1">/15</span>
+              </p>
+            </div>
 
+            {!isRevealing ? (
+              <div className="md:order-2 order-1">
+                <TimerRing deadlineAt={m.deadlineAt} />
+              </div>
+            ) : (
+              <div className="md:order-2 order-1 w-36 h-36" />
+            )}
+
+            <div className="text-center md:text-left md:order-3 order-3">
+              <p className="text-[10px] uppercase tracking-[0.3em] text-white/40 mb-1">
+                Catégorie
+              </p>
+              <p className="text-display text-2xl md:text-3xl font-semibold text-white capitalize">
+                {question.category.replace(/_/g, " ")}
+              </p>
+            </div>
+          </motion.div>
+
+          {/* QUESTION + ANSWERS */}
           <QuestionCard
             question={question}
             round={m.round}
@@ -97,25 +127,33 @@ export function GameView({
             phoneFriendGuess={me?.phoneFriend?.guess}
           />
 
+          {/* JOKERS */}
           {me?.alive && !isRevealing && (
-            <JokersBar
-              remaining={me.jokersRemaining}
-              onUse={useJoker}
-              disabled={pendingChoice !== null}
-            />
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <JokersBar
+                remaining={me.jokersRemaining}
+                onUse={useJoker}
+                disabled={pendingChoice !== null}
+              />
+            </motion.div>
           )}
-
-          <PlayerStrip state={state} myUserId={myUserId} />
 
           {!me?.alive && (
             <p className="text-center text-danger/80 text-sm italic">
               Tu es éliminé. Tu peux observer la suite.
             </p>
           )}
+
+          {/* PLAYER STRIP */}
+          <PlayerStrip state={state} myUserId={myUserId} />
         </div>
 
-        {/* SIDEBAR ladder */}
-        <div className="lg:sticky lg:top-20 self-start">
+        {/* PRIZE LADDER SIDEBAR */}
+        <div className="xl:sticky xl:top-24 self-start order-first xl:order-last w-full max-w-md mx-auto xl:max-w-none">
           <PrizeLadder currentTier={me?.currentTier ?? 0} />
         </div>
       </div>
