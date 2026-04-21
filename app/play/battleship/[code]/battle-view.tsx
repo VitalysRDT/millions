@@ -12,7 +12,6 @@ import { motion } from "framer-motion";
 import { Avatar } from "@/components/common/avatar";
 import { nanoid } from "nanoid";
 import { expandPattern } from "@/lib/games/battleship/shot-resolver";
-import { useCountdown } from "@/hooks/use-countdown";
 import { Check, RotateCcw, Undo2 } from "lucide-react";
 import Link from "next/link";
 
@@ -307,10 +306,9 @@ export function BattleView({
           />
         )}
 
-        {myTurn && bs.questionPhase === "shooting" && bs.currentQuestion && bs.deadlineAt && (
+        {myTurn && bs.questionPhase === "shooting" && bs.currentQuestion && (
           <ShootPanel
             question={bs.currentQuestion as BattleshipQuestionPublic}
-            deadlineAt={bs.deadlineAt}
             aim={aim}
             aimHistoryLength={aimHistory.length}
             onConfirm={confirmShot}
@@ -320,7 +318,22 @@ export function BattleView({
           />
         )}
 
-        {!myTurn && (
+        {myTurn && bs.questionPhase === "shot_resolved" && (
+          <ShotResolvedPanel
+            lastShot={bs.lastShot}
+            iAm="shooter"
+          />
+        )}
+
+        {!myTurn && bs.questionPhase === "shot_resolved" && (
+          <ShotResolvedPanel
+            lastShot={bs.lastShot}
+            iAm="defender"
+            opponentName={opponent.pseudo}
+          />
+        )}
+
+        {!myTurn && bs.questionPhase !== "shot_resolved" && (
           <div className="flex items-center justify-center gap-3.5 py-8">
             <Avatar seed={opponent.avatarSeed} pseudo={opponent.pseudo} size={36} />
             <div className="display text-center" style={{ fontSize: 22, color: "var(--fg-2)" }}>
@@ -329,7 +342,7 @@ export function BattleView({
                 : bs.questionPhase === "revealing"
                   ? `${opponent.pseudo} s'est trompé…`
                   : bs.questionPhase === "shooting"
-                    ? `${opponent.pseudo} prépare son tir…`
+                    ? `${opponent.pseudo} vise…`
                     : `Tour de ${opponent.pseudo}`}
             </div>
           </div>
@@ -342,7 +355,6 @@ export function BattleView({
 
 function ShootPanel({
   question,
-  deadlineAt,
   aim,
   aimHistoryLength,
   onConfirm,
@@ -351,7 +363,6 @@ function ShootPanel({
   busy,
 }: {
   question: BattleshipQuestionPublic;
-  deadlineAt: number;
   aim: [number, number] | null;
   aimHistoryLength: number;
   onConfirm: () => void;
@@ -359,7 +370,6 @@ function ShootPanel({
   onUndo: () => void;
   busy: boolean;
 }) {
-  const remaining = useCountdown(deadlineAt);
   const rewardLabel = patternLabel(question.patternReward);
   const LETTERS = "ABCDEFGHIJ";
 
@@ -387,7 +397,7 @@ function ShootPanel({
           : `Tape une case de la grille ennemie. Récompense : ${rewardLabel}.`}
       </div>
 
-      <div className="flex flex-wrap gap-2.5 justify-center mb-4">
+      <div className="flex flex-wrap gap-2.5 justify-center">
         <button
           onClick={onUndo}
           disabled={aimHistoryLength === 0 || busy}
@@ -414,16 +424,68 @@ function ShootPanel({
           {busy ? "Tir…" : "Valider le tir"}
         </button>
       </div>
+    </div>
+  );
+}
 
+function ShotResolvedPanel({
+  lastShot,
+  iAm,
+  opponentName,
+}: {
+  lastShot?: {
+    shooterUserId: string;
+    cells: { x: number; y: number; result: "miss" | "hit" | "sunk"; shipSize?: number }[];
+    sunk: boolean;
+    gameOver: boolean;
+  };
+  iAm: "shooter" | "defender";
+  opponentName?: string;
+}) {
+  const hits = lastShot?.cells.filter((c) => c.result === "hit" || c.result === "sunk").length ?? 0;
+  const misses = lastShot?.cells.filter((c) => c.result === "miss").length ?? 0;
+  const sunkShip = lastShot?.cells.find((c) => c.result === "sunk");
+  const allMiss = hits === 0 && misses > 0;
+
+  let title: string;
+  let color: string;
+  if (sunkShip) {
+    title = iAm === "shooter" ? "Bateau coulé !" : "Ton bateau a coulé…";
+    color = iAm === "shooter" ? "var(--good)" : "var(--bad)";
+  } else if (hits > 0) {
+    title = iAm === "shooter" ? `Touché ! (${hits})` : `Impact ! (${hits})`;
+    color = iAm === "shooter" ? "var(--good)" : "var(--bad)";
+  } else if (allMiss) {
+    title = iAm === "shooter" ? "Raté." : `${opponentName ?? "L'adversaire"} a manqué.`;
+    color = "var(--fg-2)";
+  } else {
+    title = "Tir résolu";
+    color = "var(--fg-1)";
+  }
+
+  return (
+    <div className="text-center py-4 sm:py-6">
       <div
-        className="mono inline-flex px-3 py-1.5 rounded-full text-sm"
-        style={{
-          background: remaining <= 5 ? "oklch(65% 0.22 25 / 0.2)" : "var(--accent-soft)",
-          color: remaining <= 5 ? "var(--bad)" : "var(--accent)",
-          border: `1px solid ${remaining <= 5 ? "var(--bad)" : "var(--accent-edge)"}`,
-        }}
+        className="display"
+        style={{ fontSize: "clamp(26px, 5vw, 36px)", color, lineHeight: 1.1 }}
       >
-        {remaining}s pour tirer
+        {title}
+      </div>
+      <div className="muted text-sm mt-3">
+        {hits > 0 && (
+          <>
+            {hits} case{hits > 1 ? "s" : ""} touchée{hits > 1 ? "s" : ""}
+            {misses > 0 && <> · {misses} manquée{misses > 1 ? "s" : ""}</>}
+          </>
+        )}
+        {hits === 0 && misses > 0 && (
+          <>
+            {misses} case{misses > 1 ? "s" : ""} à l'eau
+          </>
+        )}
+      </div>
+      <div className="muted text-xs mt-4 italic">
+        {iAm === "shooter" ? "Tour adverse dans quelques secondes…" : "À toi de jouer bientôt…"}
       </div>
     </div>
   );

@@ -13,8 +13,8 @@ import { shuffleIndices } from "@/lib/games/shared/shuffle";
 import {
   patternForDifficulty,
   QUESTION_TIMER_MS,
-  SHOOT_TIMER_MS,
   REVEAL_TIMER_MS,
+  SHOT_REVEAL_MS,
   type ShotPattern,
 } from "./constants";
 import {
@@ -200,10 +200,11 @@ export async function answerBattleshipQuestion(opts: {
     m.revealedCorrectIndex = correctIndex;
     m.revealedChosenIndex = opts.chosenIndex;
     if (correct) {
-      // Move to "shooting" phase — player now has SHOOT_TIMER_MS to pick a cell.
-      // Turn does NOT pass yet. tickBattleship forfeits if the deadline expires.
+      // Move to "shooting" phase — no deadline, the player takes as much time
+      // as they want to pick a target cell. Turn stays with this user until
+      // they fire (or leave).
       m.questionPhase = "shooting";
-      m.deadlineAt = Date.now() + SHOOT_TIMER_MS;
+      m.deadlineAt = undefined;
     } else {
       // Wrong answer: reveal the correct one for REVEAL_TIMER_MS, then the tick
       // passes the turn to the opponent.
@@ -277,16 +278,15 @@ export async function fireShot(opts: {
       state.status = "finished";
       state.endedAt = Date.now();
     } else {
-      // Turn passes to opponent
-      m.questionPhase = "idle";
-      m.currentQuestion = undefined;
-      m.questionDifficulty = undefined;
-      m.deadlineAt = undefined;
+      // Stay on the shooter's turn for SHOT_REVEAL_MS so they can see the
+      // impact, then tickBattleship passes the turn to the opponent.
+      m.questionPhase = "shot_resolved";
+      m.deadlineAt = Date.now() + SHOT_REVEAL_MS;
       m.answeredCorrectly = undefined;
       m.revealedCorrectIndex = undefined;
       m.revealedChosenIndex = undefined;
-      m.currentTurnUserId = opponent.userId;
-      m.turnNumber++;
+      // Keep m.currentQuestion & questionDifficulty around so the UI can
+      // show what was fired; cleared on phase exit by tickBattleship.
     }
     return state;
   });
@@ -367,8 +367,8 @@ export async function tickBattleship(code: string): Promise<void> {
       return state;
     }
 
-    if (bs.questionPhase === "shooting" && bs.deadlineAt && now > bs.deadlineAt) {
-      // Player had a correct answer but didn't pick a cell in time: forfeit turn.
+    if (bs.questionPhase === "shot_resolved" && bs.deadlineAt && now > bs.deadlineAt) {
+      // Shot result has been shown long enough; pass the turn now.
       const other = state.players.find((p) => p.userId !== bs.currentTurnUserId);
       bs.questionPhase = "idle";
       bs.currentQuestion = undefined;
@@ -381,6 +381,8 @@ export async function tickBattleship(code: string): Promise<void> {
       bs.turnNumber++;
       return state;
     }
+
+    // "shooting" phase has no deadline — the player takes as long as needed.
 
     return state;
   });

@@ -5,10 +5,14 @@ export const FLEET: readonly number[] = [5, 4, 3, 3, 2];
 
 /** Time to answer the question. */
 export const QUESTION_TIMER_MS = 15_000;
-/** Time to pick a cell to fire at after a correct answer. */
-export const SHOOT_TIMER_MS = 20_000;
 /** Duration of the reveal phase when a question is answered wrongly or timed out. */
 export const REVEAL_TIMER_MS = 4_000;
+/** Duration the shot result stays on screen before the turn changes. */
+export const SHOT_REVEAL_MS = 3_000;
+/**
+ * No timer for the shooting phase — player takes as much time as they want
+ * to pick a target cell after answering correctly.
+ */
 
 /**
  * Six distinct shot shapes — one per difficulty level.

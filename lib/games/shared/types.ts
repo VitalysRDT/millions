@@ -105,10 +105,15 @@ export interface BattleshipSection {
   placedReady: Record<string, boolean>; // userId -> bool
   /**
    * Question phase lifecycle:
-   *   idle → answering → (correct) shooting → idle (next turn)
-   *                    → (wrong)   revealing → idle (next turn)
+   *   idle → answering → (correct) shooting → shot_resolved → idle (next turn)
+   *                    → (wrong)   revealing                 → idle (next turn)
    */
-  questionPhase: "idle" | "answering" | "revealing" | "shooting";
+  questionPhase:
+    | "idle"
+    | "answering"
+    | "revealing"
+    | "shooting"
+    | "shot_resolved";
   currentQuestion?: BattleshipQuestionPublic;
   questionDifficulty?: number;
   deadlineAt?: number;

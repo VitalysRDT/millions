@@ -98,34 +98,50 @@ export function Grid({
                 bg = "var(--accent-soft)";
                 border = "var(--accent)";
               } else if (c === "miss") {
-                bg = "var(--ink-2)";
+                // Clearly visible "miss" marker: a filled grey circle on a
+                // slightly lighter bg than the empty cells.
+                bg = "oklch(22% 0.02 270)";
+                border = "oklch(32% 0.02 270)";
                 content = (
-                  <span style={{ color: "var(--fg-3)", fontSize: 11 }}>·</span>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      width: "50%",
+                      height: "50%",
+                      borderRadius: "50%",
+                      background: "oklch(60% 0.02 270)",
+                      boxShadow: "inset 0 0 2px oklch(80% 0.02 270)",
+                    }}
+                  />
                 );
               } else if (c === "hit") {
                 bg = "var(--bad)";
+                border = "oklch(80% 0.2 25)";
                 content = (
                   <span
                     style={{
                       color: "var(--fg-0)",
-                      fontSize: 12,
-                      fontWeight: 700,
+                      fontSize: 16,
+                      fontWeight: 800,
+                      textShadow: "0 0 6px oklch(0% 0 0 / 0.6)",
                     }}
                   >
                     ✕
                   </span>
                 );
               } else if (c === "sunk") {
-                bg = "oklch(35% 0.18 25)";
+                bg = "oklch(40% 0.2 25)";
+                border = "oklch(80% 0.2 25)";
                 content = (
                   <span
                     style={{
                       color: "var(--fg-0)",
-                      fontSize: 11,
-                      fontWeight: 700,
+                      fontSize: 14,
+                      fontWeight: 800,
+                      textShadow: "0 0 8px oklch(65% 0.22 25)",
                     }}
                   >
-                    ✕
+                    ☒
                   </span>
                 );
               }
