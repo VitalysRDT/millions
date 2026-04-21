@@ -22,49 +22,62 @@ export function QuestionPanel({
 }) {
   const remaining = useCountdown(deadlineAt);
   const isRevealed = revealedCorrectIdx !== undefined;
+  const rewardLabel =
+    question.patternReward === "single"
+      ? "Tir simple"
+      : question.patternReward === "line3"
+        ? "Ligne 3 cases"
+        : "Croix 5 cases";
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
-      className="surface-elevated rounded-2xl sm:rounded-3xl p-4 sm:p-6 max-w-2xl mx-auto"
+      className="surface max-w-2xl mx-auto p-6 sm:p-7"
     >
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-4">
-        <p className="text-[10px] sm:text-xs uppercase tracking-widest text-white/40 truncate max-w-full">
-          {question.category} · Niveau {question.difficulty}
-        </p>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-[10px] sm:text-xs text-white/40">Récompense :</span>
-          <span className="text-[10px] sm:text-xs font-bold text-gold">
-            {question.patternReward === "single"
-              ? "1 tir"
-              : question.patternReward === "line3"
-                ? "Ligne 3"
-                : "Croix 5"}
-          </span>
+      <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
+        <div>
+          <div className="chip accent mb-2.5">
+            Niveau {question.difficulty} · {rewardLabel}
+          </div>
+          <div
+            className="display leading-[1.35] max-w-[540px]"
+            style={{ fontSize: "clamp(18px, 3vw, 22px)" }}
+          >
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={question.id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                {question.text}
+              </motion.span>
+            </AnimatePresence>
+          </div>
+        </div>
+        <div
+          className="mono flex-shrink-0 px-3 py-1.5 rounded-full text-sm"
+          style={{
+            background: remaining <= 5 ? "oklch(65% 0.22 25 / 0.2)" : "var(--accent-soft)",
+            color: remaining <= 5 ? "var(--bad)" : "var(--accent)",
+            border: `1px solid ${remaining <= 5 ? "var(--bad)" : "var(--accent-edge)"}`,
+          }}
+        >
+          {remaining}s
         </div>
       </div>
 
-      <AnimatePresence mode="wait">
-        <motion.h2
-          key={question.id}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-display text-lg sm:text-2xl font-semibold text-center mb-5 sm:mb-6 leading-snug"
-        >
-          {question.text}
-        </motion.h2>
-      </AnimatePresence>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         {question.answers.map((a, i) => {
           let state: "idle" | "selected" | "correct" | "wrong" | "locked" = "idle";
           if (isRevealed) {
             if (i === revealedCorrectIdx) state = "correct";
             else if (i === selectedIdx && !myChoiceWasCorrect) state = "wrong";
             else state = "locked";
-          } else if (selectedIdx !== null) state = selectedIdx === i ? "selected" : "locked";
+          } else if (selectedIdx !== null) {
+            state = selectedIdx === i ? "selected" : "locked";
+          }
           return (
             <AnswerButton
               key={i}
@@ -75,16 +88,6 @@ export function QuestionPanel({
             />
           );
         })}
-      </div>
-
-      <div className="text-center">
-        <span
-          className={`inline-block px-4 py-1.5 rounded-full text-sm font-mono ${
-            remaining <= 5 ? "bg-danger/20 text-danger" : "bg-gold/15 text-gold"
-          }`}
-        >
-          {remaining}s
-        </span>
       </div>
     </motion.div>
   );

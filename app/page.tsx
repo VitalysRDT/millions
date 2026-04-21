@@ -1,127 +1,190 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { Crown, Anchor, Sparkles, Users, Zap, Trophy } from "lucide-react";
 import { SiteHeader } from "@/components/layout/site-header";
 
 export default function HomePage() {
   return (
     <>
       <SiteHeader />
-      <main className="relative overflow-hidden">
+      <div className="screen max-w-[1280px] mx-auto px-5 sm:px-7 pt-14 sm:pt-[72px] pb-24 sm:pb-[120px]">
         {/* HERO */}
-        <section className="relative pt-16 sm:pt-20 md:pt-28 pb-16 sm:pb-24 md:pb-32 px-4 sm:px-6">
-          <div className="max-w-6xl mx-auto text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="inline-flex items-center gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-gold/10 border border-gold/20 text-gold text-[10px] sm:text-xs font-medium tracking-wider uppercase mb-6 sm:mb-8"
-            >
-              <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-              Le jeu qui change tout
-            </motion.div>
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.1 }}
-              className="text-display text-5xl sm:text-7xl md:text-8xl font-bold tracking-tight leading-[0.95]"
-            >
-              <span className="text-gold-gradient">Millions</span>
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="mt-4 sm:mt-6 text-base sm:text-xl text-white/60 max-w-2xl mx-auto px-2"
-            >
-              Affronte tes amis sur deux jeux légendaires. Lobbies en temps réel,
-              questions à gogo, suspense maximal.
-            </motion.p>
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
-              className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
-            >
-              <Link href="/play" className="btn-gold text-base sm:text-lg w-full sm:w-auto">
-                Lancer une partie
-              </Link>
-              <Link href="/leaderboard" className="btn-ghost w-full sm:w-auto">
-                <Trophy className="w-4 h-4" />
-                Classement
-              </Link>
-            </motion.div>
+        <div className="relative text-center pt-6 sm:pt-10">
+          <div className="chip accent mb-6 sm:mb-7">
+            <span
+              aria-hidden
+              className="w-1.5 h-1.5 rounded-[3px]"
+              style={{
+                background: "var(--accent)",
+                boxShadow: "0 0 8px var(--accent-glow)",
+              }}
+            />
+            Temps réel · 2—8 joueurs
+          </div>
+          <h1
+            className="display m-0"
+            style={{
+              fontSize: "clamp(64px, 14vw, 136px)",
+              lineHeight: 0.95,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            <span className="shine">Millions</span>
+          </h1>
+          <p
+            className="mx-auto max-w-[560px] text-base sm:text-lg leading-relaxed mt-6 sm:mt-7 px-2"
+            style={{ color: "var(--fg-1)" }}
+          >
+            Deux jeux de plateau classiques, un seul code de partie. Affronte tes amis sur le quiz à paliers, ou duelle-les en bataille navale où chaque tir se gagne à la question.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-3.5 mt-8 sm:mt-9">
+            <Link href="/play" className="btn btn-primary" style={{ padding: "16px 28px", fontSize: 15 }}>
+              Lancer une partie  →
+            </Link>
+            <Link href="/leaderboard" className="btn btn-ghost" style={{ padding: "16px 28px", fontSize: 15 }}>
+              Voir le classement
+            </Link>
           </div>
 
-          <div className="absolute top-20 left-1/4 w-64 sm:w-96 h-64 sm:h-96 bg-gold/10 rounded-full blur-[120px] pointer-events-none" />
-          <div className="absolute bottom-0 right-1/4 w-64 sm:w-96 h-64 sm:h-96 bg-royal/40 rounded-full blur-[120px] pointer-events-none" />
-        </section>
+          <div
+            className="absolute left-0 right-0 -z-10 pointer-events-none"
+            style={{
+              top: -80,
+              bottom: -40,
+              background:
+                "radial-gradient(500px 180px at 50% 50%, var(--accent-soft), transparent 70%)",
+              filter: "blur(10px)",
+            }}
+          />
+        </div>
 
-        {/* GAMES */}
-        <section className="px-4 sm:px-6 pb-16 sm:pb-24 relative z-10">
-          <div className="max-w-6xl mx-auto grid sm:grid-cols-2 gap-5 sm:gap-8">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <Link href="/play" className="group block">
-                <div className="relative h-full surface-elevated rounded-2xl sm:rounded-3xl p-6 sm:p-10 overflow-hidden hover:border-gold/40 transition-all duration-500">
-                  <div className="absolute -top-20 -right-20 w-64 h-64 bg-gold/20 rounded-full blur-3xl group-hover:bg-gold/30 transition-all" />
-                  <Crown className="w-10 h-10 sm:w-12 sm:h-12 text-gold mb-4 sm:mb-6 relative" />
-                  <h3 className="text-display text-2xl sm:text-3xl font-bold mb-3 relative">
-                    Qui veut gagner des millions
-                  </h3>
-                  <p className="text-white/60 mb-6 sm:mb-8 text-sm sm:text-base relative">
-                    15 questions, 1 million d'euros à la clé. Mode battle royale —
-                    jusqu'à 8 joueurs en parallèle, élimination en direct.
-                  </p>
-                  <div className="flex items-center gap-4 text-xs uppercase tracking-wider text-white/40 relative">
-                    <span className="flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5" /> 2-8 joueurs
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5" /> 30s/question
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            </motion.div>
+        {/* TWO GAMES */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-16 sm:mt-[88px]">
+          <GameCard
+            index="01"
+            title="Qui veut gagner des Millions"
+            sub="Battle royale 2—8"
+            description="15 paliers, 1 000 000 € à la clé. Chaque joueur répond en parallèle sur sa propre question. Rate un palier non-certain et tu es éliminé."
+            stats={[
+              ["Joueurs", "2–8"],
+              ["Durée", "~12 min"],
+              ["Jokers", "4"],
+            ]}
+            href="/play"
+            accentVar="var(--accent)"
+          />
+          <GameCard
+            index="02"
+            title="Bataille navale à questions"
+            sub="Duel 1 vs 1"
+            description="Chaque tir doit être déverrouillé par une bonne réponse. Plus la question est dure, plus ta salve est large — croix ou zone."
+            stats={[
+              ["Joueurs", "1v1"],
+              ["Grille", "10×10"],
+              ["Salves", "3 types"],
+            ]}
+            href="/play"
+            accentVar="var(--cool)"
+          />
+        </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-            >
-              <Link href="/play" className="group block">
-                <div className="relative h-full surface-elevated rounded-2xl sm:rounded-3xl p-6 sm:p-10 overflow-hidden hover:border-gold/40 transition-all duration-500">
-                  <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-royal/40 rounded-full blur-3xl group-hover:bg-royal/60 transition-all" />
-                  <Anchor className="w-10 h-10 sm:w-12 sm:h-12 text-gold mb-4 sm:mb-6 relative" />
-                  <h3 className="text-display text-2xl sm:text-3xl font-bold mb-3 relative">
-                    Bataille navale à questions
-                  </h3>
-                  <p className="text-white/60 mb-6 sm:mb-8 text-sm sm:text-base relative">
-                    Chaque tir doit être déverrouillé par une bonne réponse. Plus la
-                    question est dure, plus tu tires fort.
-                  </p>
-                  <div className="flex items-center gap-4 text-xs uppercase tracking-wider text-white/40 relative">
-                    <span className="flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5" /> 1v1
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5" /> Tirs en croix
-                    </span>
-                  </div>
+        {/* HOW IT WORKS */}
+        <div className="mt-20 sm:mt-[100px]">
+          <div className="eyebrow text-center mb-2">Le protocole</div>
+          <h2 className="display text-center m-0 mb-10 sm:mb-12" style={{ fontSize: "clamp(28px, 5vw, 42px)" }}>
+            Invite, joue, gagne — en trois pas.
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            {[
+              { n: "I", t: "Crée ton lobby", d: "Un pseudo, un code à 6 lettres. Partage-le sur n'importe quel canal." },
+              { n: "II", t: "Attends tes amis", d: "Ils rejoignent avec le code. Tout le monde clique sur Prêt, l'hôte lance." },
+              { n: "III", t: "Vise les millions", d: "Questions synchronisées, polling 1s, jokers à distance. Tout est en Redis." },
+            ].map((step) => (
+              <div key={step.n} className="surface p-7">
+                <div
+                  className="display leading-none mb-4 opacity-80"
+                  style={{ fontSize: 56, color: "var(--accent)" }}
+                >
+                  {step.n}
                 </div>
-              </Link>
-            </motion.div>
+                <div className="text-[17px] font-semibold mb-2">{step.t}</div>
+                <div className="muted text-[14px] leading-relaxed">{step.d}</div>
+              </div>
+            ))}
           </div>
-        </section>
-      </main>
+        </div>
+      </div>
     </>
+  );
+}
+
+function GameCard({
+  index,
+  title,
+  sub,
+  description,
+  stats,
+  href,
+  accentVar,
+}: {
+  index: string;
+  title: string;
+  sub: string;
+  description: string;
+  stats: [string, string][];
+  href: string;
+  accentVar: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="surface group p-9 relative overflow-hidden cursor-pointer transition-all block"
+      style={{
+        textDecoration: "none",
+        color: "inherit",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = "var(--accent-edge)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = "";
+      }}
+    >
+      <div
+        aria-hidden
+        className="absolute pointer-events-none rounded-full"
+        style={{
+          top: -80,
+          right: -80,
+          width: 260,
+          height: 260,
+          background: `radial-gradient(circle, ${accentVar} 0%, transparent 60%)`,
+          opacity: 0.16,
+          filter: "blur(40px)",
+        }}
+      />
+      <div className="flex justify-between items-start mb-7">
+        <div
+          className="mono text-[11px]"
+          style={{ color: "var(--fg-3)", letterSpacing: "0.2em" }}
+        >
+          {index} / 02
+        </div>
+        <div className="chip">{sub}</div>
+      </div>
+      <h3 className="display text-[28px] sm:text-[34px] leading-[1.1] m-0 mb-3.5">{title}</h3>
+      <p className="muted text-sm leading-relaxed mb-7">{description}</p>
+      <div
+        className="flex gap-6 pt-5"
+        style={{ borderTop: "1px solid var(--ink-3)" }}
+      >
+        {stats.map(([k, v]) => (
+          <div key={k}>
+            <div className="eyebrow mb-1" style={{ fontSize: 10 }}>{k}</div>
+            <div className="display text-[17px]">{v}</div>
+          </div>
+        ))}
+      </div>
+    </Link>
   );
 }

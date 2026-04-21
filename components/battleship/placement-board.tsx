@@ -4,7 +4,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Grid, type GridCellState } from "./grid";
 import { FLEET, GRID_SIZE } from "@/lib/games/battleship/constants";
-import { Button } from "@/components/ui/button";
 import { RotateCw, Shuffle, Trash2 } from "lucide-react";
 import { postJson } from "@/lib/utils/fetcher";
 
@@ -131,18 +130,21 @@ export function PlacementBoard({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-3xl mx-auto px-3 sm:px-6 py-6 sm:py-10"
+      className="screen max-w-[900px] mx-auto px-5 sm:px-7 py-10"
     >
-      <h2 className="text-display text-2xl sm:text-3xl font-bold text-center mb-2">
-        Place ta flotte
-      </h2>
-      <p className="text-center text-white/50 text-xs sm:text-sm mb-6 sm:mb-8 px-2">
-        {!allPlaced && currentSize !== undefined
-          ? `Place ton bateau de ${currentSize} cases (${remainingFleet.length} restant${remainingFleet.length > 1 ? "s" : ""})`
-          : "Flotte prête !"}
-      </p>
+      <div className="text-center mb-6">
+        <div className="eyebrow mb-2">Placement</div>
+        <h2 className="display m-0" style={{ fontSize: "clamp(28px, 5vw, 42px)", lineHeight: 1 }}>
+          Place ta flotte
+        </h2>
+        <p className="muted text-sm mt-3">
+          {!allPlaced && currentSize !== undefined
+            ? `Place ton bateau de ${currentSize} cases (${remainingFleet.length} restant${remainingFleet.length > 1 ? "s" : ""})`
+            : "Flotte prête !"}
+        </p>
+      </div>
 
-      <div className="flex flex-col items-center gap-5 sm:gap-6">
+      <div className="flex flex-col items-center gap-6">
         <Grid
           cells={grid}
           onCellClick={click}
@@ -152,50 +154,65 @@ export function PlacementBoard({
         />
 
         <div className="flex flex-wrap gap-2 justify-center">
-          {FLEET.map((size, i) => (
-            <div
-              key={i}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono ${
-                i < pendingIdx
-                  ? "bg-success/20 text-success line-through"
-                  : i === pendingIdx
-                    ? "bg-gold/20 text-gold ring-2 ring-gold"
-                    : "bg-white/[0.04] text-white/60"
-              }`}
-            >
-              {size}
-            </div>
-          ))}
+          {FLEET.map((size, i) => {
+            const done = i < pendingIdx;
+            const current = i === pendingIdx;
+            return (
+              <div
+                key={i}
+                className="mono text-xs px-3 py-1.5 rounded-lg"
+                style={{
+                  background: done
+                    ? "oklch(72% 0.18 150 / 0.2)"
+                    : current
+                      ? "var(--accent-soft)"
+                      : "var(--ink-2)",
+                  color: done
+                    ? "var(--good)"
+                    : current
+                      ? "var(--accent)"
+                      : "var(--fg-2)",
+                  border: current ? "1px solid var(--accent-edge)" : "1px solid transparent",
+                  textDecoration: done ? "line-through" : "none",
+                }}
+              >
+                {size}
+              </div>
+            );
+          })}
         </div>
 
-        <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
-          <Button onClick={() => setHorizontal(!horizontal)} variant="ghost" size="sm">
+        <div className="flex flex-wrap gap-2.5 justify-center">
+          <button onClick={() => setHorizontal(!horizontal)} className="btn">
             <RotateCw className="w-4 h-4" />
             <span className="hidden sm:inline">{horizontal ? "Horizontal" : "Vertical"}</span>
             <span className="sm:hidden">{horizontal ? "H" : "V"}</span>
-          </Button>
-          <Button onClick={auto} variant="ghost" size="sm">
+          </button>
+          <button onClick={auto} className="btn">
             <Shuffle className="w-4 h-4" />
             <span className="hidden sm:inline">Aléatoire</span>
             <span className="sm:hidden">Auto</span>
-          </Button>
-          <Button onClick={reset} variant="ghost" size="sm">
+          </button>
+          <button onClick={reset} className="btn">
             <Trash2 className="w-4 h-4" />
             <span className="hidden sm:inline">Effacer</span>
-          </Button>
+          </button>
         </div>
 
-        <Button
+        <button
           onClick={submit}
           disabled={!allPlaced || submitting}
-          variant="gold"
-          size="lg"
-          className="w-full max-w-xs sm:min-w-[240px] sm:w-auto"
+          className="btn btn-primary w-full max-w-xs sm:w-auto"
+          style={{ padding: "16px 28px" }}
         >
-          {submitting ? "Validation..." : "Valider la flotte"}
-        </Button>
+          {submitting ? "Validation…" : "Valider la flotte"}
+        </button>
 
-        {error && <p className="text-danger text-sm">{error}</p>}
+        {error && (
+          <p className="text-sm" style={{ color: "var(--bad)" }}>
+            {error}
+          </p>
+        )}
       </div>
     </motion.div>
   );

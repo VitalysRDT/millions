@@ -9,7 +9,6 @@ import { DifficultyPicker } from "@/components/battleship/difficulty-picker";
 import { QuestionPanel } from "@/components/battleship/question-panel";
 import { postJson } from "@/lib/utils/fetcher";
 import { motion } from "framer-motion";
-import { Trophy, Anchor, Crosshair } from "lucide-react";
 import { Avatar } from "@/components/common/avatar";
 import { nanoid } from "nanoid";
 import { expandPattern } from "@/lib/games/battleship/shot-resolver";
@@ -59,7 +58,6 @@ export function BattleView({
     }
   }, [bs.answeredCorrectly, bs.questionPhase]);
 
-  // Polling tick to expire questions
   useEffect(() => {
     const id = setInterval(() => {
       postJson(`/api/battleship/${state.code}/tick`, {}).catch(() => undefined);
@@ -67,7 +65,6 @@ export function BattleView({
     return () => clearInterval(id);
   }, [state.code]);
 
-  // (B5 fix) Fetch my own ships so I can see my fleet on my grid
   const { data: myShipsData } = useSWR<MyShipsResponse>(
     `/api/battleship/${state.code}/my-ships`,
   );
@@ -76,7 +73,6 @@ export function BattleView({
     for (const [x, y] of ship.cells) myShipCells.add(`${x},${y}`);
   }
 
-  // Build grids
   const enemyGrid: GridCellState[][] = (() => {
     const g = emptyGrid();
     for (const c of bs.publicGrids[opponent.userId] ?? []) {
@@ -87,7 +83,6 @@ export function BattleView({
 
   const myGrid: GridCellState[][] = (() => {
     const g = emptyGrid();
-    // (B5 fix) Draw my own ships first, then overlay hits/misses
     for (const key of myShipCells) {
       const [xs, ys] = key.split(",");
       const x = Number(xs);
@@ -133,7 +128,6 @@ export function BattleView({
     if (busy) return;
     setBusy(true);
     try {
-      // (B4 fix) Send only the origin. Server expands and validates.
       await postJson(`/api/battleship/${state.code}/shoot`, {
         origin: [x, y],
         clientIdemKey: idemRef.current + ":shot",
@@ -150,58 +144,77 @@ export function BattleView({
   if (bs.phase === "finished") {
     const won = bs.winnerUserId === myUserId;
     return (
-      <div className="min-h-[80vh] flex items-center justify-center px-4 sm:px-6">
+      <div className="screen min-h-[80vh] flex items-center justify-center px-5 sm:px-7">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center max-w-md"
         >
-          <Trophy
-            className={`w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-6 ${
-              won ? "text-gold" : "text-white/30"
-            }`}
-          />
-          <h1 className="text-display text-4xl sm:text-5xl font-bold mb-3">
-            {won ? "Victoire" : "Défaite"}
-          </h1>
-          <p className="text-white/50 mb-8 px-4">
+          <div className="eyebrow mb-4">Résultat</div>
+          <div
+            className="display m-0"
+            style={{ fontSize: "clamp(56px, 12vw, 96px)", lineHeight: 1 }}
+          >
+            {won ? (
+              <span className="shine">Victoire</span>
+            ) : (
+              <span style={{ color: "var(--fg-2)" }}>Défaite</span>
+            )}
+          </div>
+          <p
+            className="display italic mt-2 mb-9"
+            style={{ fontSize: 22, color: "var(--fg-2)" }}
+          >
             {won
               ? `Tu as coulé toute la flotte de ${opponent.pseudo}.`
               : `${opponent.pseudo} t'a coulé.`}
           </p>
-          <Link href="/play" className="btn-gold inline-flex">
-            Retour au hub
-          </Link>
+          <div className="flex gap-3 justify-center">
+            <Link href="/play" className="btn btn-primary">
+              Rejouer
+            </Link>
+            <Link href="/" className="btn">
+              Retour au hub
+            </Link>
+          </div>
         </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="px-3 sm:px-6 py-5 sm:py-8 max-w-6xl mx-auto">
-      <div className="text-center mb-5 sm:mb-8">
-        <p className="text-[10px] sm:text-xs uppercase tracking-widest text-white/40 mb-1 sm:mb-2">
-          Tour {bs.turnNumber}
-        </p>
-        <h2 className="text-display text-2xl sm:text-3xl font-bold">
-          {myTurn ? (
-            <span className="text-gold-gradient">À toi de jouer</span>
-          ) : (
-            <span className="text-white/60 truncate inline-block max-w-full">
-              Tour de {opponent.pseudo}
-            </span>
-          )}
-        </h2>
+    <div className="screen max-w-[1280px] mx-auto px-5 sm:px-7 py-7 pb-16">
+      <div className="flex items-center justify-between mb-7">
+        <Link href="/play" className="btn btn-ghost">
+          ← Quitter
+        </Link>
+        <div className="text-center">
+          <div className="eyebrow mb-1">Tour {bs.turnNumber}</div>
+          <div
+            className="display"
+            style={{ fontSize: "clamp(22px, 3.5vw, 32px)", lineHeight: 1 }}
+          >
+            {myTurn ? (
+              <span className="shine">À toi de jouer</span>
+            ) : (
+              <span className="muted">Tour de {opponent.pseudo}</span>
+            )}
+          </div>
+        </div>
+        <div style={{ width: 88 }} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
-        {/* Enemy grid (target) */}
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-            <Crosshair className="w-4 h-4 text-danger flex-shrink-0" />
-            <h3 className="text-xs sm:text-sm uppercase tracking-wider sm:tracking-widest text-white/60 truncate">
-              Flotte ennemie · {opponent.pseudo}
-            </h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-7">
+        {/* Enemy grid */}
+        <div className="surface p-5 sm:p-6">
+          <div className="flex justify-between items-center mb-3.5">
+            <div className="flex items-center gap-2">
+              <span style={{ color: "var(--bad)", fontSize: 18 }}>◎</span>
+              <div className="eyebrow truncate">Flotte ennemie · {opponent.pseudo}</div>
+            </div>
+            <div className="mono text-[11px]" style={{ color: "var(--fg-2)" }}>
+              {bs.shipsStatus[opponent.userId]?.remaining ?? 5}/5
+            </div>
           </div>
           <Grid
             cells={enemyGrid}
@@ -211,28 +224,25 @@ export function BattleView({
             onCellLeave={() => setHover(null)}
             highlight={previewCells}
           />
-          <p className="text-xs text-white/40 mt-2 sm:mt-3">
-            {bs.shipsStatus[opponent.userId]?.remaining ?? 5} bateau(x) restant(s)
-          </p>
         </div>
 
         {/* My grid */}
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-            <Anchor className="w-4 h-4 text-gold flex-shrink-0" />
-            <h3 className="text-xs sm:text-sm uppercase tracking-wider sm:tracking-widest text-white/60">
-              Ta flotte
-            </h3>
+        <div className="surface p-5 sm:p-6">
+          <div className="flex justify-between items-center mb-3.5">
+            <div className="flex items-center gap-2">
+              <span style={{ color: "var(--accent)", fontSize: 18 }}>⚓</span>
+              <div className="eyebrow">Ta flotte</div>
+            </div>
+            <div className="mono text-[11px]" style={{ color: "var(--fg-2)" }}>
+              {bs.shipsStatus[myUserId]?.remaining ?? 5}/5
+            </div>
           </div>
           <Grid cells={myGrid} maxWidthPx={420} />
-          <p className="text-xs text-white/40 mt-2 sm:mt-3">
-            {bs.shipsStatus[myUserId]?.remaining ?? 5} bateau(x) restant(s)
-          </p>
         </div>
       </div>
 
       {/* Action panel */}
-      <div className="max-w-2xl mx-auto px-1 sm:px-0">
+      <div className="surface p-6 sm:p-7 min-h-[200px]">
         {myTurn && bs.questionPhase === "idle" && !shootMode && (
           <DifficultyPicker onPick={askQuestion} disabled={busy} />
         )}
@@ -245,16 +255,22 @@ export function BattleView({
           />
         )}
         {myTurn && shootMode && (
-          <p className="text-center text-gold animate-pulse text-sm sm:text-base">
-            Bonne réponse ! Choisis une cellule pour tirer.
-          </p>
+          <div className="text-center py-6">
+            <div className="chip accent mb-4 inline-flex">Bonne réponse</div>
+            <div className="display mb-2" style={{ fontSize: 24 }}>
+              Choisis une case pour tirer.
+            </div>
+            <div className="muted text-sm">
+              Survole la grille ennemie pour voir la zone d'impact.
+            </div>
+          </div>
         )}
         {!myTurn && (
-          <div className="text-center surface rounded-2xl p-4 sm:p-6 flex items-center justify-center gap-3 sm:gap-4">
+          <div className="flex items-center justify-center gap-3.5 py-8">
             <Avatar seed={opponent.avatarSeed} pseudo={opponent.pseudo} size={36} />
-            <p className="text-white/60 text-sm sm:text-base truncate">
-              {opponent.pseudo} prépare son tir...
-            </p>
+            <div className="display" style={{ fontSize: 22, color: "var(--fg-2)" }}>
+              {opponent.pseudo} prépare son tir…
+            </div>
           </div>
         )}
       </div>

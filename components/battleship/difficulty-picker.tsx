@@ -1,7 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Crosshair, Plus, Sparkles } from "lucide-react";
 import { patternForDifficulty, patternCellCount } from "@/lib/games/battleship/constants";
 
 const DIFFS = [1, 2, 3, 4, 5, 6] as const;
@@ -15,6 +13,15 @@ const labels: Record<number, string> = {
   6: "Expert",
 };
 
+const glyphs: Record<number, string> = {
+  1: "·",
+  2: "·",
+  3: "—",
+  4: "—",
+  5: "+",
+  6: "■",
+};
+
 export function DifficultyPicker({
   onPick,
   disabled,
@@ -23,34 +30,58 @@ export function DifficultyPicker({
   disabled?: boolean;
 }) {
   return (
-    <div className="surface-elevated rounded-2xl sm:rounded-3xl p-4 sm:p-6">
-      <h3 className="text-center text-xs sm:text-sm uppercase tracking-widest text-white/40 mb-1">
-        Choisis ta difficulté
-      </h3>
-      <p className="text-center text-white/50 text-xs mb-4 sm:mb-6">
-        Plus dur = tir plus puissant
-      </p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+    <div>
+      <div className="eyebrow text-center mb-5">
+        Choisis la difficulté de ta question
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
         {DIFFS.map((d) => {
           const p = patternForDifficulty(d);
           const cells = patternCellCount(p);
-          const Icon = cells === 1 ? Crosshair : cells === 3 ? Plus : Sparkles;
+          const rewardLabel =
+            cells === 1 ? "1 tir" : cells === 3 ? "Ligne 3" : "Croix 5";
           return (
-            <motion.button
+            <button
               key={d}
-              whileHover={!disabled ? { scale: 1.04 } : {}}
-              whileTap={!disabled ? { scale: 0.96 } : {}}
               onClick={() => onPick(d)}
               disabled={disabled}
-              className="flex flex-col items-center gap-1.5 sm:gap-2 px-3 py-3 sm:px-4 sm:py-4 rounded-xl sm:rounded-2xl border-2 border-bg-border bg-bg-card hover:border-gold/60 hover:bg-gold/5 disabled:opacity-50 transition"
+              className="surface-soft text-left transition-all"
+              style={{
+                appearance: "none",
+                cursor: disabled ? "not-allowed" : "pointer",
+                padding: 22,
+                background: "var(--ink-2)",
+                color: "var(--fg-0)",
+                fontFamily: "var(--ff-ui)",
+                opacity: disabled ? 0.5 : 1,
+              }}
+              onMouseEnter={(e) => {
+                if (!disabled) {
+                  e.currentTarget.style.borderColor = "var(--accent-edge)";
+                  e.currentTarget.style.background = "var(--ink-3)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "";
+                e.currentTarget.style.background = "var(--ink-2)";
+              }}
             >
-              <Icon className="w-5 h-5 text-gold" />
-              <span className="font-bold text-white text-sm sm:text-base">Niveau {d}</span>
-              <span className="text-[10px] sm:text-xs text-white/40">{labels[d]}</span>
-              <span className="text-[10px] sm:text-xs font-mono text-gold/80">
-                {cells === 1 ? "1 tir" : cells === 3 ? "Ligne 3" : "Croix 5"}
-              </span>
-            </motion.button>
+              <div
+                className="display leading-none mb-3"
+                style={{
+                  fontSize: 46,
+                  color: "var(--accent)",
+                }}
+              >
+                {glyphs[d]}
+              </div>
+              <div className="font-semibold mb-1" style={{ fontSize: 17 }}>
+                Niveau {d}
+              </div>
+              <div className="muted text-xs">
+                {labels[d]} · {rewardLabel}
+              </div>
+            </button>
           );
         })}
       </div>

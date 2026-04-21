@@ -1,8 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils/cn";
-
 const LETTERS = ["A", "B", "C", "D"] as const;
 
 export type AnswerState = "idle" | "selected" | "locked" | "correct" | "wrong" | "hidden";
@@ -23,58 +20,80 @@ export function AnswerButton({
 }) {
   const isHidden = state === "hidden";
   const isInteractive = state === "idle" && !disabled && !isHidden;
+  const locking = state === "selected";
+  const isCorrect = state === "correct";
+  const isWrongChosen = state === "wrong";
+
+  let bg = "var(--ink-2)";
+  let border = "var(--ink-3)";
+  let color = "var(--fg-0)";
+
+  if (isHidden) {
+    bg = "transparent";
+    border = "var(--ink-3)";
+    color = "var(--fg-3)";
+  } else if (isCorrect) {
+    bg = "var(--good)";
+    border = "var(--good)";
+    color = "var(--ink-0)";
+  } else if (isWrongChosen) {
+    bg = "var(--bad)";
+    border = "var(--bad)";
+    color = "var(--fg-0)";
+  } else if (locking) {
+    bg = "var(--accent-soft)";
+    border = "var(--accent)";
+    color = "var(--accent)";
+  } else if (state === "locked") {
+    bg = "var(--ink-3)";
+    color = "var(--fg-2)";
+  }
+
+  const shadow = isCorrect
+    ? "0 0 32px oklch(72% 0.2 150 / 0.5)"
+    : isWrongChosen
+      ? "0 0 32px oklch(65% 0.22 25 / 0.4)"
+      : "none";
 
   return (
-    <motion.button
+    <button
       onClick={onClick}
-      disabled={
-        disabled ||
-        isHidden ||
-        state === "locked" ||
-        state === "correct" ||
-        state === "wrong"
-      }
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: isHidden ? 0.12 : 1, y: 0 }}
-      transition={{ duration: 0.45, delay: index * 0.07, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={isInteractive ? { scale: 1.02, y: -2 } : {}}
-      whileTap={state === "idle" ? { scale: 0.98 } : {}}
-      className={cn(
-        "relative group w-full h-16 sm:h-20 md:h-24 flex items-center gap-3 sm:gap-4 md:gap-5",
-        "pl-3 pr-4 sm:pl-4 sm:pr-6 md:pl-5 md:pr-8",
-        "rounded-xl sm:rounded-2xl border-2 text-left transition-all overflow-hidden",
-        state === "idle" &&
-          "bg-gradient-to-br from-bg-card/95 to-bg-deep/90 border-bg-border hover:border-gold/70",
-        state === "selected" &&
-          "bg-gradient-to-br from-gold/30 to-gold/10 border-gold shadow-gold",
-        state === "locked" && "bg-bg-surface/60 border-white/10 opacity-55",
-        state === "correct" &&
-          "bg-gradient-to-br from-success/35 to-success/10 border-success shadow-[0_0_40px_rgba(33,210,124,0.55)]",
-        state === "wrong" &&
-          "bg-gradient-to-br from-danger/35 to-danger/10 border-danger shadow-[0_0_40px_rgba(255,84,112,0.55)]",
-        state === "hidden" && "bg-bg-surface/30 border-bg-border line-through grayscale",
-      )}
+      disabled={disabled || isHidden || state === "locked" || isCorrect || isWrongChosen}
+      className="relative w-full flex items-center gap-3 text-left overflow-hidden"
+      style={{
+        appearance: "none",
+        cursor: isInteractive ? "pointer" : "default",
+        background: bg,
+        border: `1.5px solid ${border}`,
+        color,
+        padding: "16px 18px",
+        borderRadius: 12,
+        fontFamily: "var(--ff-ui)",
+        fontSize: 15,
+        fontWeight: 500,
+        transition: "all 0.25s",
+        opacity: isHidden ? 0.3 : 1,
+        textDecoration: isHidden ? "line-through" : "none",
+        animation: locking ? "pulse-accent 0.9s ease-in-out infinite" : "none",
+        boxShadow: shadow,
+      }}
     >
-      {isInteractive && (
-        <span className="absolute inset-0 bg-gradient-to-r from-gold/0 via-gold/10 to-gold/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-      )}
       <span
-        className={cn(
-          "relative flex-shrink-0 rounded-full flex items-center justify-center font-bold border-2 transition-all",
-          "w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 text-lg sm:text-xl md:text-2xl",
-          state === "correct" && "bg-success text-bg-deep border-success",
-          state === "wrong" && "bg-danger text-bg-deep border-danger",
-          state === "selected" && "bg-gold-gradient text-bg-deep border-gold shadow-gold",
-          state === "idle" && "bg-bg-deep/80 text-gold border-gold/40 group-hover:border-gold group-hover:bg-gold/15",
-          state === "locked" && "bg-white/5 text-white/40 border-white/10",
-          state === "hidden" && "bg-white/5 text-white/30 border-white/10",
-        )}
+        className="flex items-center justify-center flex-shrink-0 rounded-full font-bold"
+        style={{
+          width: 28,
+          height: 28,
+          background:
+            isCorrect || isWrongChosen || locking
+              ? "oklch(100% 0 0 / 0.2)"
+              : "var(--ink-0)",
+          border: "1px solid currentColor",
+          fontSize: 12,
+        }}
       >
         {LETTERS[index]}
       </span>
-      <span className="relative font-medium text-sm sm:text-base md:text-lg text-white/95 leading-snug min-w-0 flex-1">
-        {text}
-      </span>
-    </motion.button>
+      <span className="flex-1">{text}</span>
+    </button>
   );
 }

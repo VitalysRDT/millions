@@ -1,73 +1,123 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { Avatar } from "@/components/common/avatar";
-import { LogOut, Trophy, User2 } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { postJson } from "@/lib/utils/fetcher";
-import { useRouter } from "next/navigation";
 
 export function SiteHeader() {
   const { user, isAuthed } = useCurrentUser();
   const router = useRouter();
+  const pathname = usePathname();
   const logout = async () => {
     await postJson("/api/auth/logout", {});
     router.push("/login");
     router.refresh();
   };
+
+  const tabs = [
+    { id: "landing", label: "Accueil", href: "/" },
+    { id: "play", label: "Jouer", href: "/play" },
+    { id: "leaderboard", label: "Classement", href: "/leaderboard" },
+  ];
+
+  const currentTab =
+    pathname === "/"
+      ? "landing"
+      : pathname.startsWith("/leaderboard")
+        ? "leaderboard"
+        : pathname.startsWith("/play") ||
+            pathname.startsWith("/me")
+          ? "play"
+          : null;
+
   return (
-    <header className="sticky top-0 z-30 backdrop-blur-2xl bg-bg-deep/40 border-b border-white/5">
-      <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
-        <Link
-          href="/"
-          className="text-display text-xl sm:text-2xl text-gold-gradient font-bold tracking-tight flex-shrink-0"
-        >
-          Millions
-        </Link>
-        <nav className="flex items-center gap-0.5 sm:gap-1">
-          <Link
-            href="/play"
-            className="text-white/70 hover:text-white px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition"
-          >
-            Jouer
-          </Link>
-          <Link
-            href="/leaderboard"
-            className="text-white/70 hover:text-white px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition flex items-center gap-1.5"
-          >
-            <Trophy className="w-4 h-4" />
-            <span className="hidden sm:inline">Classement</span>
-          </Link>
-          {isAuthed && user ? (
-            <>
-              <Link
-                href="/me"
-                className="ml-1 sm:ml-2 flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 hover:bg-white/[0.08] transition"
-              >
-                <Avatar seed={user.avatarSeed} pseudo={user.pseudo} size={26} />
-                <span className="hidden sm:inline text-sm font-medium text-white/90 max-w-[120px] truncate">
-                  {user.pseudo}
-                </span>
-              </Link>
-              <button
-                onClick={logout}
-                aria-label="Déconnexion"
-                className="ml-0.5 sm:ml-1 p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/[0.06] transition"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </>
-          ) : (
+    <nav
+      className="sticky top-0 z-40 flex items-center justify-between gap-4 px-4 sm:px-7 py-3 sm:py-3.5"
+      style={{
+        borderBottom: "1px solid oklch(22% 0.03 270 / 0.5)",
+        background: "oklch(10% 0.02 280 / 0.72)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
+      }}
+    >
+      <Link
+        href="/"
+        className="flex items-center gap-2.5 display text-lg sm:text-xl"
+        style={{ letterSpacing: "0.01em" }}
+      >
+        <span
+          aria-hidden
+          className="inline-block w-2.5 h-2.5 rounded-full"
+          style={{
+            background: "var(--accent)",
+            boxShadow: "0 0 12px var(--accent-glow)",
+          }}
+        />
+        <span>Millions</span>
+      </Link>
+
+      <div
+        className="hidden sm:flex gap-1 p-1 rounded-[10px]"
+        style={{
+          background: "var(--ink-1)",
+          border: "1px solid var(--ink-3)",
+        }}
+      >
+        {tabs.map((t) => {
+          const selected = currentTab === t.id;
+          return (
             <Link
-              href="/login"
-              className="ml-1 sm:ml-2 inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-gold-gradient text-bg-deep text-xs sm:text-sm font-semibold"
+              key={t.id}
+              href={t.href}
+              aria-selected={selected}
+              className="px-3.5 py-2 rounded-[7px] text-[13px] font-medium transition-colors"
+              style={{
+                letterSpacing: "0.01em",
+                color: selected ? "var(--accent)" : "var(--fg-2)",
+                background: selected ? "var(--accent-soft)" : "transparent",
+                boxShadow: selected ? "inset 0 0 0 1px var(--accent-edge)" : "none",
+              }}
             >
-              <User2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Se connecter</span>
+              {t.label}
             </Link>
-          )}
-        </nav>
+          );
+        })}
       </div>
-    </header>
+
+      <div className="flex items-center gap-2 sm:gap-3">
+        {isAuthed && user ? (
+          <>
+            <Link
+              href="/me"
+              className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-xl transition"
+              style={{
+                background: "var(--ink-1)",
+                border: "1px solid var(--ink-3)",
+              }}
+            >
+              <Avatar seed={user.avatarSeed} pseudo={user.pseudo} size={24} />
+              <span className="hidden sm:inline text-sm font-medium max-w-[120px] truncate" style={{ color: "var(--fg-1)" }}>
+                {user.pseudo}
+              </span>
+            </Link>
+            <button
+              onClick={logout}
+              aria-label="Déconnexion"
+              className="p-2 rounded-lg transition"
+              style={{ color: "var(--fg-2)" }}
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </>
+        ) : (
+          <Link href="/login" className="btn btn-primary text-xs sm:text-sm">
+            Se connecter
+          </Link>
+        )}
+      </div>
+    </nav>
   );
 }

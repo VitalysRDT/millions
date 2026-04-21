@@ -2,11 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { Crown, Anchor, ArrowRight, KeyRound } from "lucide-react";
 import { SiteHeader } from "@/components/layout/site-header";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { Button } from "@/components/ui/button";
 import { postJson } from "@/lib/utils/fetcher";
 
 type CreateResponse = { code: string };
@@ -29,7 +26,9 @@ export default function PlayHubPage() {
     return (
       <>
         <SiteHeader />
-        <p className="p-10 text-center text-white/40 text-sm">Chargement...</p>
+        <p className="p-10 text-center text-sm" style={{ color: "var(--fg-3)" }}>
+          Chargement...
+        </p>
       </>
     );
   }
@@ -71,96 +70,132 @@ export default function PlayHubPage() {
   return (
     <>
       <SiteHeader />
-      <main className="px-4 sm:px-6 py-8 sm:py-16">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-8 sm:mb-14"
-          >
-            <h1 className="text-display text-3xl sm:text-5xl md:text-6xl font-bold mb-2 sm:mb-3">
-              Salut, <span className="text-gold-gradient">{user?.pseudo}</span>
-            </h1>
-            <p className="text-white/50 text-sm sm:text-base">
-              Crée une partie ou rejoins un code.
-            </p>
-          </motion.div>
-
-          <div className="grid sm:grid-cols-2 gap-4 sm:gap-6 mb-8 sm:mb-12">
-            <motion.button
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-              onClick={() => create("millionaire")}
-              disabled={creating !== null}
-              className="text-left surface-elevated rounded-2xl sm:rounded-3xl p-5 sm:p-8 hover:border-gold/40 transition group disabled:opacity-50"
-            >
-              <Crown className="w-9 h-9 sm:w-10 sm:h-10 text-gold mb-3 sm:mb-4" />
-              <h3 className="text-display text-xl sm:text-2xl font-bold mb-2">
-                Qui veut gagner des millions
-              </h3>
-              <p className="text-white/50 text-xs sm:text-sm mb-4 sm:mb-6">
-                Lobby battle royale 2-8 joueurs, 15 questions, 1M€ à la clé.
-              </p>
-              <div className="text-gold text-sm font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
-                {creating === "millionaire" ? "Création..." : "Créer un lobby"}
-                <ArrowRight className="w-4 h-4" />
-              </div>
-            </motion.button>
-
-            <motion.button
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              onClick={() => create("battleship")}
-              disabled={creating !== null}
-              className="text-left surface-elevated rounded-2xl sm:rounded-3xl p-5 sm:p-8 hover:border-gold/40 transition group disabled:opacity-50"
-            >
-              <Anchor className="w-9 h-9 sm:w-10 sm:h-10 text-gold mb-3 sm:mb-4" />
-              <h3 className="text-display text-xl sm:text-2xl font-bold mb-2">
-                Bataille navale à questions
-              </h3>
-              <p className="text-white/50 text-xs sm:text-sm mb-4 sm:mb-6">
-                Duel 1v1, chaque tir débloqué par une bonne réponse.
-              </p>
-              <div className="text-gold text-sm font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
-                {creating === "battleship" ? "Création..." : "Créer un duel"}
-                <ArrowRight className="w-4 h-4" />
-              </div>
-            </motion.button>
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="surface-elevated rounded-2xl sm:rounded-3xl p-5 sm:p-8"
-          >
-            <div className="flex items-center gap-3 mb-3 sm:mb-4">
-              <KeyRound className="w-5 h-5 text-gold" />
-              <h3 className="text-lg sm:text-xl font-semibold">Rejoindre un lobby</h3>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="text"
-                value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value.toUpperCase().slice(0, 6))}
-                placeholder="CODE 6 LETTRES"
-                maxLength={6}
-                className="input-field flex-1"
-              />
-              <Button
-                onClick={join}
-                disabled={joining || joinCode.length !== 6}
-                size="lg"
-              >
-                {joining ? "..." : "Entrer"}
-              </Button>
-            </div>
-            {error && <p className="text-danger text-sm mt-4">{error}</p>}
-          </motion.div>
+      <div className="screen max-w-[900px] mx-auto px-5 sm:px-7 py-10 sm:py-12 pb-28">
+        <div className="text-center mb-10 sm:mb-12">
+          <div className="eyebrow mb-2.5">Bienvenue</div>
+          <h1 className="display m-0" style={{ fontSize: "clamp(34px, 7vw, 64px)", lineHeight: 1 }}>
+            Salut, <span className="shine">{user.pseudo}</span>
+          </h1>
+          <p className="muted mt-3 text-sm sm:text-base">
+            Crée une partie ou rejoins un code existant.
+          </p>
         </div>
-      </main>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 mb-6">
+          <button
+            onClick={() => create("millionaire")}
+            disabled={creating !== null}
+            className="surface text-left p-7 relative overflow-hidden transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ cursor: creating !== null ? "not-allowed" : "pointer" }}
+            onMouseEnter={(e) => {
+              if (creating === null) e.currentTarget.style.borderColor = "var(--accent-edge)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "";
+            }}
+          >
+            <div
+              aria-hidden
+              className="absolute pointer-events-none rounded-full"
+              style={{
+                top: -70,
+                right: -70,
+                width: 220,
+                height: 220,
+                background: "radial-gradient(circle, var(--accent) 0%, transparent 60%)",
+                opacity: 0.14,
+                filter: "blur(40px)",
+              }}
+            />
+            <div className="flex justify-between items-start mb-6">
+              <div className="mono text-[11px]" style={{ color: "var(--fg-3)", letterSpacing: "0.2em" }}>
+                01 / 02
+              </div>
+              <div className="chip">2—8 joueurs</div>
+            </div>
+            <h3 className="display text-[26px] sm:text-[30px] leading-[1.1] m-0 mb-3">
+              Qui veut gagner des Millions
+            </h3>
+            <p className="muted text-sm leading-relaxed mb-6">
+              Lobby battle royale 2–8 joueurs, 15 paliers, 1 M€ à la clé.
+            </p>
+            <div className="flex items-center gap-2" style={{ color: "var(--accent)", fontWeight: 600 }}>
+              {creating === "millionaire" ? "Création…" : "Créer un lobby"}
+              <span>→</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => create("battleship")}
+            disabled={creating !== null}
+            className="surface text-left p-7 relative overflow-hidden transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ cursor: creating !== null ? "not-allowed" : "pointer" }}
+            onMouseEnter={(e) => {
+              if (creating === null) e.currentTarget.style.borderColor = "var(--accent-edge)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "";
+            }}
+          >
+            <div
+              aria-hidden
+              className="absolute pointer-events-none rounded-full"
+              style={{
+                top: -70,
+                right: -70,
+                width: 220,
+                height: 220,
+                background: "radial-gradient(circle, var(--cool) 0%, transparent 60%)",
+                opacity: 0.14,
+                filter: "blur(40px)",
+              }}
+            />
+            <div className="flex justify-between items-start mb-6">
+              <div className="mono text-[11px]" style={{ color: "var(--fg-3)", letterSpacing: "0.2em" }}>
+                02 / 02
+              </div>
+              <div className="chip">1 vs 1</div>
+            </div>
+            <h3 className="display text-[26px] sm:text-[30px] leading-[1.1] m-0 mb-3">
+              Bataille navale à questions
+            </h3>
+            <p className="muted text-sm leading-relaxed mb-6">
+              Duel 1v1, chaque tir débloqué par une bonne réponse.
+            </p>
+            <div className="flex items-center gap-2" style={{ color: "var(--accent)", fontWeight: 600 }}>
+              {creating === "battleship" ? "Création…" : "Créer un duel"}
+              <span>→</span>
+            </div>
+          </button>
+        </div>
+
+        <div className="surface p-6 sm:p-7">
+          <div className="eyebrow mb-4">Rejoindre un lobby</div>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value.toUpperCase().slice(0, 6))}
+              placeholder="CODE"
+              maxLength={6}
+              className="input-field flex-1"
+            />
+            <button
+              onClick={join}
+              disabled={joining || joinCode.length !== 6}
+              className="btn btn-primary"
+              style={{ padding: "14px 24px" }}
+            >
+              {joining ? "…" : "Entrer"}
+            </button>
+          </div>
+          {error && (
+            <p className="text-sm mt-4" style={{ color: "var(--bad)" }}>
+              {error}
+            </p>
+          )}
+        </div>
+      </div>
     </>
   );
 }

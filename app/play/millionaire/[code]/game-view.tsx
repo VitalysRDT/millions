@@ -72,20 +72,18 @@ export function GameView({
   const myReveal = m.lastReveal?.perPlayer.find((p) => p.userId === myUserId);
   const isRevealing = m.roundState === "revealing";
   const question = me?.overrideQuestion ?? m.question;
-  // (B2 fix) Use per-player correct index for switch joker users; fall back
-  // to the shared one if not present (older state or no switch used).
   const myRevealedCorrectIdx = isRevealing
     ? (myReveal?.correctIndex ?? m.lastReveal?.correctIndex)
     : undefined;
 
   return (
-    <div className="stage-bg min-h-[calc(100vh-4rem)]">
+    <div className="min-h-[calc(100vh-60px)]">
       <RevealOverlay state={state} myUserId={myUserId} />
 
       {/* MOBILE: floating ladder toggle (top-right) */}
       <button
         onClick={() => setLadderOpen(!ladderOpen)}
-        className="xl:hidden fixed top-20 right-3 z-30 px-3 py-1.5 rounded-full bg-gold/15 border border-gold/40 text-gold text-xs font-bold uppercase tracking-wider backdrop-blur-md"
+        className="xl:hidden fixed top-16 right-3 z-30 chip accent"
       >
         {ladderOpen ? "Fermer" : "Gains"}
       </button>
@@ -94,7 +92,12 @@ export function GameView({
       {ladderOpen && (
         <div
           onClick={() => setLadderOpen(false)}
-          className="xl:hidden fixed inset-0 z-20 bg-bg-deep/70 backdrop-blur-sm flex items-start justify-end p-4 pt-16"
+          className="xl:hidden fixed inset-0 z-20 flex items-start justify-end p-4 pt-16"
+          style={{
+            background: "oklch(10% 0.02 280 / 0.7)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
         >
           <div onClick={(e) => e.stopPropagation()} className="w-72 max-w-full">
             <PrizeLadder currentTier={me?.currentTier ?? 0} />
@@ -102,86 +105,102 @@ export function GameView({
         </div>
       )}
 
-      <div className="max-w-[1500px] mx-auto px-3 sm:px-5 md:px-8 py-4 sm:py-6 md:py-10 grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-6 sm:gap-8 xl:gap-10">
-        {/* MAIN COLUMN */}
-        <div className="flex flex-col gap-5 sm:gap-7 md:gap-10 items-center min-w-0">
-          {/* HEADER ZONE */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full flex flex-row items-center justify-between sm:justify-center gap-3 sm:gap-8 md:gap-12"
-          >
-            <div className="text-left sm:text-right flex-shrink-0">
-              <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.25em] sm:tracking-[0.3em] text-white/40 mb-0.5 sm:mb-1">
-                Round
-              </p>
-              <p className="text-display text-2xl sm:text-4xl md:text-5xl font-bold text-gold-gradient leading-none">
-                {m.round.toString().padStart(2, "0")}
-                <span className="text-white/30 text-sm sm:text-xl md:text-2xl ml-1">/15</span>
-              </p>
-            </div>
+      <div className="screen max-w-[1360px] mx-auto px-5 sm:px-7 py-7 pb-20">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-7">
+          {/* MAIN COLUMN */}
+          <div className="flex flex-col gap-7 min-w-0">
+            {/* HEADER */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center justify-between gap-4 sm:gap-8 py-2"
+            >
+              <div>
+                <div className="eyebrow mb-1">Round</div>
+                <div
+                  className="display shine leading-none"
+                  style={{ fontSize: "clamp(36px, 6vw, 56px)" }}
+                >
+                  {String(m.round).padStart(2, "0")}
+                  <span
+                    className="ml-1"
+                    style={{ color: "var(--fg-3)", fontSize: "0.45em" }}
+                  >
+                    /15
+                  </span>
+                </div>
+              </div>
 
-            {!isRevealing ? (
-              <TimerRing deadlineAt={m.deadlineAt} />
-            ) : (
-              <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 flex-shrink-0" />
+              {!isRevealing ? (
+                <TimerRing deadlineAt={m.deadlineAt} />
+              ) : (
+                <div style={{ width: 140, height: 140, flexShrink: 0 }} />
+              )}
+
+              <div className="text-right">
+                <div className="eyebrow mb-1">Catégorie</div>
+                <div
+                  className="display capitalize"
+                  style={{
+                    fontSize: "clamp(20px, 3vw, 30px)",
+                    lineHeight: 1,
+                  }}
+                >
+                  {question.category.replace(/_/g, " ")}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* QUESTION */}
+            <QuestionCard
+              question={question}
+              round={m.round}
+              totalRounds={15}
+              selectedIdx={isRevealing ? (myReveal?.chosenIndex ?? null) : pendingChoice}
+              hiddenIndexes={me?.fiftyHidden}
+              revealedCorrectIdx={myRevealedCorrectIdx}
+              myChoiceWasCorrect={myReveal?.correct}
+              onSelect={select}
+              publicVote={me?.publicVote}
+              phoneFriendGuess={me?.phoneFriend?.guess}
+            />
+
+            {/* JOKERS */}
+            {me?.alive && !isRevealing && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="flex justify-center"
+              >
+                <JokersBar
+                  remaining={me.jokersRemaining}
+                  onUse={useJoker}
+                  disabled={pendingChoice !== null}
+                />
+              </motion.div>
             )}
 
-            <div className="text-right sm:text-left flex-shrink min-w-0">
-              <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.25em] sm:tracking-[0.3em] text-white/40 mb-0.5 sm:mb-1">
-                Catégorie
+            {!me?.alive && (
+              <p
+                className="text-center italic px-4 text-sm"
+                style={{ color: "var(--bad)" }}
+              >
+                Tu es éliminé. Tu peux observer la suite.
               </p>
-              <p className="text-display text-base sm:text-2xl md:text-3xl font-semibold text-white capitalize truncate max-w-[120px] sm:max-w-none">
-                {question.category.replace(/_/g, " ")}
-              </p>
-            </div>
-          </motion.div>
+            )}
 
-          {/* QUESTION + ANSWERS */}
-          <QuestionCard
-            question={question}
-            round={m.round}
-            totalRounds={15}
-            selectedIdx={isRevealing ? (myReveal?.chosenIndex ?? null) : pendingChoice}
-            hiddenIndexes={me?.fiftyHidden}
-            revealedCorrectIdx={myRevealedCorrectIdx}
-            myChoiceWasCorrect={myReveal?.correct}
-            onSelect={select}
-            publicVote={me?.publicVote}
-            phoneFriendGuess={me?.phoneFriend?.guess}
-          />
+            {/* PLAYER STRIP */}
+            <PlayerStrip state={state} myUserId={myUserId} />
+          </div>
 
-          {/* JOKERS */}
-          {me?.alive && !isRevealing && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="w-full flex justify-center"
-            >
-              <JokersBar
-                remaining={me.jokersRemaining}
-                onUse={useJoker}
-                disabled={pendingChoice !== null}
-              />
-            </motion.div>
-          )}
-
-          {!me?.alive && (
-            <p className="text-center text-danger/80 text-sm italic px-4">
-              Tu es éliminé. Tu peux observer la suite.
-            </p>
-          )}
-
-          {/* PLAYER STRIP */}
-          <PlayerStrip state={state} myUserId={myUserId} />
-        </div>
-
-        {/* PRIZE LADDER SIDEBAR (desktop only) */}
-        <div className="hidden xl:block xl:sticky xl:top-24 self-start">
-          <PrizeLadder currentTier={me?.currentTier ?? 0} />
+          {/* PRIZE LADDER (desktop) */}
+          <div className="hidden xl:block">
+            <PrizeLadder currentTier={me?.currentTier ?? 0} />
+          </div>
         </div>
       </div>
     </div>
   );
 }
+

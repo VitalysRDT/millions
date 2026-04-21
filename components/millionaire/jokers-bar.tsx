@@ -1,15 +1,12 @@
 "use client";
 
-import { Percent, Users, Phone, RefreshCw, type LucideIcon } from "lucide-react";
 import type { Joker } from "@/lib/games/millionaire/constants";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils/cn";
 
-const JOKERS: { id: Joker; icon: LucideIcon; label: string }[] = [
-  { id: "fifty", icon: Percent, label: "50:50" },
-  { id: "public", icon: Users, label: "Public" },
-  { id: "phone", icon: Phone, label: "Ami" },
-  { id: "switch", icon: RefreshCw, label: "Switch" },
+const JOKERS: { id: Joker; glyph: string; label: string }[] = [
+  { id: "fifty", glyph: "50", label: "50:50" },
+  { id: "public", glyph: "◊◊", label: "Public" },
+  { id: "phone", glyph: "☏", label: "Ami" },
+  { id: "switch", glyph: "↻", label: "Switch" },
 ];
 
 export function JokersBar({
@@ -22,49 +19,54 @@ export function JokersBar({
   disabled?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-5 flex-wrap">
-      {JOKERS.map(({ id, icon: Icon, label }) => {
-        const used = !remaining.includes(id);
+    <div className="flex justify-center gap-3 sm:gap-3.5 flex-wrap">
+      {JOKERS.map((j) => {
+        const used = !remaining.includes(j.id);
         const enabled = !used && !disabled;
         return (
-          <motion.button
-            key={id}
-            onClick={() => onUse(id)}
-            disabled={used || disabled}
-            whileHover={enabled ? { scale: 1.08, y: -3 } : {}}
-            whileTap={enabled ? { scale: 0.96 } : {}}
-            className={cn(
-              "relative group flex flex-col items-center justify-center gap-1 sm:gap-1.5",
-              "w-[68px] h-[68px] sm:w-[84px] sm:h-[84px] md:w-[100px] md:h-[100px]",
-              "rounded-xl sm:rounded-2xl border-2 transition-all",
-              used
-                ? "border-white/10 bg-white/[0.02] opacity-30"
-                : "border-gold/40 bg-gradient-to-br from-gold/15 to-gold/5 hover:border-gold hover:shadow-gold",
-            )}
+          <button
+            key={j.id}
+            onClick={() => onUse(j.id)}
+            disabled={!enabled}
+            className="relative flex flex-col items-center justify-center overflow-hidden transition-all"
+            style={{
+              appearance: "none",
+              cursor: enabled ? "pointer" : "default",
+              width: 108,
+              height: 96,
+              borderRadius: 14,
+              background: used ? "transparent" : "linear-gradient(180deg, var(--accent-soft), transparent)",
+              border: `1.5px solid ${used ? "var(--ink-3)" : "var(--accent-edge)"}`,
+              color: used ? "var(--fg-3)" : "var(--accent)",
+              opacity: enabled ? 1 : used ? 0.35 : 0.6,
+              fontFamily: "var(--ff-ui)",
+              gap: 6,
+            }}
           >
-            {enabled && (
-              <span className="absolute -inset-2 rounded-3xl bg-gold/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-            )}
-            <Icon
-              className={cn(
-                "relative w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8",
-                used ? "text-white/30" : "text-gold drop-shadow-glow",
-              )}
-            />
-            <span
-              className={cn(
-                "text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-wider relative",
-                used ? "text-white/30" : "text-gold",
-              )}
+            <div className="display" style={{ fontSize: 28, lineHeight: 1 }}>
+              {j.glyph}
+            </div>
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                fontWeight: 600,
+              }}
             >
-              {label}
-            </span>
+              {j.label}
+            </div>
             {used && (
-              <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <span className="w-[120%] h-0.5 bg-white/40 rotate-[-15deg]" />
-              </span>
+              <div
+                aria-hidden
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background:
+                    "repeating-linear-gradient(45deg, transparent 0 6px, oklch(100% 0 0 / 0.04) 6px 7px)",
+                }}
+              />
             )}
-          </motion.button>
+          </button>
         );
       })}
     </div>

@@ -1,11 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Trophy, Home } from "lucide-react";
 import type { LobbyState } from "@/lib/games/shared/types";
 import { TIERS_EUR } from "@/lib/games/millionaire/constants";
 import { Avatar } from "@/components/common/avatar";
 import Link from "next/link";
+
+function fmt(n: number): string {
+  if (n >= 1_000_000) return "1 000 000 €";
+  if (n >= 1_000) return `${(n / 1000).toLocaleString("fr-FR")} 000 €`;
+  return `${n} €`;
+}
 
 export function FinalScreen({ state }: { state: LobbyState }) {
   const m = state.millionaire!;
@@ -15,71 +20,101 @@ export function FinalScreen({ state }: { state: LobbyState }) {
     return bPrize - aPrize;
   });
   const winner = state.players.find((p) => p.userId === m.winnerUserId);
+  const winnerState = winner
+    ? m.playerStates.find((p) => p.userId === winner.userId)
+    : undefined;
+  const winnerPrize = winnerState
+    ? winnerState.alive
+      ? TIERS_EUR[winnerState.currentTier - 1] ?? 0
+      : winnerState.finalPrizeEur ?? 0
+    : 0;
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-3 sm:px-6 py-8 sm:py-16">
+    <div className="screen min-h-[80vh] flex items-center justify-center px-5 sm:px-7 py-12">
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="w-full max-w-2xl text-center"
+        className="w-full max-w-[780px] text-center"
       >
-        <Trophy className="w-16 h-16 sm:w-20 sm:h-20 text-gold mx-auto mb-4 sm:mb-6" />
-        <h1 className="text-display text-3xl sm:text-5xl font-bold mb-2 sm:mb-3">
+        <div className="eyebrow mb-4">Résultat</div>
+        <div
+          className="display m-0"
+          style={{ fontSize: "clamp(48px, 10vw, 96px)", lineHeight: 1 }}
+        >
+          {winner ? (
+            <span className="shine">Millionnaire</span>
+          ) : (
+            <span style={{ color: "var(--fg-2)" }}>Partie terminée</span>
+          )}
+        </div>
+        <div
+          className="display muted mt-2 mb-10 italic"
+          style={{ fontSize: 22 }}
+        >
           {winner ? (
             <>
-              <span className="text-gold-gradient">{winner.pseudo}</span> remporte
+              <strong style={{ color: "var(--fg-0)", fontStyle: "normal", fontWeight: 600 }}>
+                {winner.pseudo}
+              </strong>{" "}
+              remporte <span className="mono" style={{ color: "var(--accent)" }}>{fmt(winnerPrize)}</span>
             </>
           ) : (
-            "Partie terminée"
+            "La flotte est à quai."
           )}
-        </h1>
-        {winner && (
-          <p className="text-2xl sm:text-3xl font-mono text-gold mb-8 sm:mb-12">
-            {(() => {
-              const winnerState = m.playerStates.find((p) => p.userId === winner.userId);
-              const prize = winnerState?.alive
-                ? TIERS_EUR[winnerState.currentTier - 1] ?? 0
-                : winnerState?.finalPrizeEur ?? 0;
-              return `${prize.toLocaleString("fr-FR")} €`;
-            })()}
-          </p>
-        )}
+        </div>
 
-        <div className="surface-elevated rounded-2xl sm:rounded-3xl p-4 sm:p-6 mb-6 sm:mb-8">
-          <h3 className="text-xs sm:text-sm uppercase tracking-widest text-white/40 mb-3 sm:mb-4">
-            Classement final
-          </h3>
-          <div className="space-y-2">
+        <div className="surface p-6 sm:p-7 mb-10 text-left">
+          <div className="eyebrow mb-4">Classement de la partie</div>
+          <div className="flex flex-col gap-1.5">
             {sorted.map((ps, i) => {
-              const meta = state.players.find((p) => p.userId === ps.userId)!;
+              const meta = state.players.find((p) => p.userId === ps.userId);
+              if (!meta) return null;
               const prize = ps.alive
                 ? TIERS_EUR[ps.currentTier - 1] ?? 0
                 : ps.finalPrizeEur ?? 0;
+              const isYou = winner?.userId === ps.userId && i === 0;
               return (
                 <div
                   key={ps.userId}
-                  className="flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-white/[0.04]"
+                  className="flex items-center gap-3.5 px-3.5 py-2.5 rounded-[10px]"
+                  style={{
+                    background: isYou ? "var(--accent-soft)" : "transparent",
+                    border: `1px solid ${isYou ? "var(--accent-edge)" : "transparent"}`,
+                  }}
                 >
-                  <span className="font-bold text-xl sm:text-2xl text-gold w-6 sm:w-8 text-center">
-                    {i + 1}
-                  </span>
-                  <Avatar seed={meta.avatarSeed} pseudo={meta.pseudo} size={32} />
-                  <span className="flex-1 text-left font-medium text-sm sm:text-base truncate">
+                  <div
+                    className="mono"
+                    style={{ width: 24, color: "var(--fg-3)", fontSize: 12 }}
+                  >
+                    #{i + 1}
+                  </div>
+                  <Avatar seed={meta.avatarSeed} pseudo={meta.pseudo} size={28} />
+                  <div
+                    className="flex-1 text-sm truncate"
+                    style={{ fontWeight: isYou ? 700 : 500 }}
+                  >
                     {meta.pseudo}
-                  </span>
-                  <span className="font-mono text-gold text-sm sm:text-base flex-shrink-0">
-                    {prize.toLocaleString("fr-FR")} €
-                  </span>
+                  </div>
+                  <div
+                    className="mono text-[13px]"
+                    style={{ color: isYou ? "var(--accent)" : "var(--fg-1)" }}
+                  >
+                    T{ps.currentTier} · {fmt(prize)}
+                  </div>
                 </div>
               );
             })}
           </div>
         </div>
 
-        <Link href="/play" className="btn-gold inline-flex">
-          <Home className="w-4 h-4" />
-          Retour au hub
-        </Link>
+        <div className="flex gap-3 justify-center">
+          <Link href="/play" className="btn btn-primary">
+            Rejouer
+          </Link>
+          <Link href="/" className="btn">
+            Retour au hub
+          </Link>
+        </div>
       </motion.div>
     </div>
   );

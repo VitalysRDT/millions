@@ -3,152 +3,233 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-display: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+  /* ==== INK scale (backgrounds) ==== */
+  --ink-0: oklch(10% 0.02 280);
+  --ink-1: oklch(13% 0.025 275);
+  --ink-2: oklch(17% 0.028 273);
+  --ink-3: oklch(22% 0.03 270);
+  --ink-4: oklch(32% 0.03 268);
+
+  /* ==== FG scale (text) ==== */
+  --fg-0: oklch(98% 0.005 90);
+  --fg-1: oklch(78% 0.01 90);
+  --fg-2: oklch(55% 0.015 90);
+  --fg-3: oklch(38% 0.02 90);
+
+  /* ==== ACCENT (champagne default) ==== */
+  --accent-h: 78;
+  --accent: oklch(78% 0.13 var(--accent-h));
+  --accent-soft: oklch(78% 0.13 var(--accent-h) / 0.14);
+  --accent-edge: oklch(78% 0.13 var(--accent-h) / 0.38);
+  --accent-glow: oklch(82% 0.16 var(--accent-h) / 0.45);
+
+  --good: oklch(72% 0.18 150);
+  --bad: oklch(65% 0.22 25);
+  --cool: oklch(72% 0.14 220);
+
+  --radius-sm: 6px;
+  --radius: 12px;
+  --radius-lg: 20px;
+
+  --ff-display: "Instrument Serif", ui-serif, Georgia, serif;
+  --ff-ui: "Inter Tight", system-ui, -apple-system, sans-serif;
+  --ff-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
+html[data-density="compact"] { font-size: 14.5px; }
+html[data-density="spacious"] { font-size: 17px; }
+html { font-size: 16px; }
+
 html, body {
-  background: #04030a;
-  color: #f4f1ff;
-  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
+  background: var(--ink-0);
+  color: var(--fg-0);
+  font-family: var(--ff-ui);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  min-height: 100vh;
 }
 
 body {
   background:
-    radial-gradient(ellipse 70% 40% at 50% 0%, rgba(245, 197, 66, 0.18), transparent 65%),
-    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(58, 31, 122, 0.35), transparent 70%),
-    radial-gradient(ellipse 40% 25% at 50% 100%, rgba(245, 197, 66, 0.08), transparent 65%),
-    #04030a;
-  min-height: 100vh;
-}
-
-/* Stage spotlight beams behind the main gameplay area */
-.stage-bg {
-  position: relative;
-}
-.stage-bg::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    conic-gradient(from 220deg at 50% 0%, transparent 0deg, rgba(245,197,66,0.08) 20deg, transparent 60deg),
-    conic-gradient(from 280deg at 50% 0%, transparent 0deg, rgba(245,197,66,0.06) 30deg, transparent 80deg);
-  pointer-events: none;
-  z-index: 0;
-}
-.stage-bg > * {
-  position: relative;
-  z-index: 1;
+    radial-gradient(1400px 600px at 50% -200px, oklch(20% 0.06 var(--accent-h) / 0.35), transparent 60%),
+    radial-gradient(800px 500px at 10% 110%, oklch(18% 0.05 260 / 0.5), transparent 60%),
+    var(--ink-0);
 }
 
 @layer components {
-  .text-gold-gradient {
-    @apply bg-gold-gradient bg-clip-text text-transparent;
-    background-size: 200% 200%;
+  /* ==== Surfaces ==== */
+  .surface {
+    background: linear-gradient(180deg, var(--ink-1), oklch(12% 0.025 275));
+    border: 1px solid var(--ink-3);
+    border-radius: var(--radius-lg);
   }
-  .border-gold-gradient {
-    position: relative;
-    background: linear-gradient(#0e0c1f, #0e0c1f) padding-box,
-                linear-gradient(135deg, #ffe28a 0%, #f5c542 35%, #c8941b 65%, #ffe28a 100%) border-box;
-    border: 2px solid transparent;
+  .surface-soft {
+    background: var(--ink-1);
+    border: 1px solid var(--ink-3);
+    border-radius: var(--radius);
   }
-  .border-gold-gradient-thick {
-    position: relative;
-    background: linear-gradient(#0e0c1f, #0e0c1f) padding-box,
-                linear-gradient(135deg, #ffe28a 0%, #f5c542 35%, #c8941b 65%, #ffe28a 100%) border-box;
-    border: 3px solid transparent;
+
+  /* ==== Chips ==== */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--ink-2);
+    border: 1px solid var(--ink-3);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--fg-1);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-family: var(--ff-ui);
   }
-  .card-spot {
-    background:
-      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(245, 197, 66, 0.15), transparent 60%),
-      linear-gradient(180deg, rgba(20, 16, 42, 0.95), rgba(10, 8, 26, 0.95));
-    backdrop-filter: blur(20px);
+  .chip.accent {
+    background: var(--accent-soft);
+    border-color: var(--accent-edge);
+    color: var(--accent);
   }
-  .drop-shadow-glow {
-    filter: drop-shadow(0 0 24px rgba(245, 197, 66, 0.45));
+
+  /* ==== Buttons ==== */
+  .btn {
+    appearance: none;
+    border: 1px solid var(--ink-3);
+    background: var(--ink-2);
+    color: var(--fg-0);
+    font: 500 14px/1 var(--ff-ui);
+    padding: 12px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.1s, background 0.15s, border-color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
   }
-  .text-shadow-glow {
-    text-shadow: 0 0 30px rgba(245, 197, 66, 0.4);
+  .btn:hover:not(:disabled) {
+    background: var(--ink-3);
+    border-color: var(--ink-4);
   }
-  .question-shape {
-    /* Clipped polygon evoking the TV show "diamond" question card */
-    clip-path: polygon(
-      4% 0%, 96% 0%, 100% 50%, 96% 100%, 4% 100%, 0% 50%
-    );
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-primary {
+    background: linear-gradient(180deg, var(--accent), oklch(68% 0.14 var(--accent-h)));
+    border-color: var(--accent-edge);
+    color: var(--ink-0);
+    font-weight: 700;
+    box-shadow:
+      0 10px 30px -8px var(--accent-glow),
+      inset 0 1px 0 oklch(95% 0.08 var(--accent-h));
   }
-  .answer-shape {
-    /* Parallelogram answer button (from TV show) */
-    clip-path: polygon(
-      6% 0%, 100% 0%, 94% 100%, 0% 100%
-    );
+  .btn-primary:hover:not(:disabled) { filter: brightness(1.05); }
+
+  .btn-ghost {
+    background: transparent;
   }
-  .answer-shape-right {
-    clip-path: polygon(
-      0% 0%, 94% 0%, 100% 100%, 6% 100%
-    );
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--ink-2);
+    border-color: var(--ink-4);
   }
-  .text-display {
-    font-family: var(--font-display);
-    font-weight: 600;
+
+  .btn-accent-outline {
+    background: transparent;
+    border-color: var(--accent-edge);
+    color: var(--accent);
+  }
+  .btn-accent-outline:hover:not(:disabled) {
+    background: var(--accent-soft);
+  }
+
+  /* ==== Typography helpers ==== */
+  .display {
+    font-family: var(--ff-display);
+    font-weight: 400;
     letter-spacing: -0.01em;
   }
-  .surface {
-    @apply bg-bg-card/80 border border-bg-border backdrop-blur-xl;
+  .mono {
+    font-family: var(--ff-mono);
   }
-  .surface-elevated {
-    @apply bg-bg-surface/95 border border-gold/10 shadow-deep backdrop-blur-2xl;
+  .muted {
+    color: var(--fg-2);
   }
-  .btn-gold {
-    @apply relative inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl
-           bg-gold-gradient text-bg-deep font-semibold tracking-wide
-           shadow-gold transition-all hover:scale-[1.02] active:scale-[0.98]
-           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100;
-    background-size: 200% 200%;
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--fg-2);
+    font-weight: 600;
   }
-  .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl
-           bg-white/[0.04] border border-white/10 text-white/90 font-medium
-           transition-all hover:bg-white/[0.08] hover:border-white/20
-           disabled:opacity-50 disabled:cursor-not-allowed;
+
+  /* Gold shine — used for hero titles, codes, prize amounts */
+  .shine {
+    background: linear-gradient(
+      180deg,
+      oklch(92% 0.09 var(--accent-h)),
+      oklch(70% 0.15 var(--accent-h)) 60%,
+      oklch(55% 0.12 var(--accent-h))
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
+
+  /* ==== Inputs ==== */
   .input-field {
-    @apply w-full px-4 py-3 rounded-xl bg-bg-deep/60 border border-bg-border
-           text-white placeholder-white/30 outline-none
-           focus:border-gold/60 focus:ring-2 focus:ring-gold/20
-           transition-all font-mono uppercase tracking-widest;
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--ink-0);
+    border: 1px solid var(--ink-3);
+    color: var(--fg-0);
+    font-family: var(--ff-mono);
+    font-size: 15px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    border-radius: 10px;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
   }
-  .grain::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(circle at 50% 0%, transparent, rgba(0,0,0,0.6));
-    pointer-events: none;
-    z-index: 1;
-    mix-blend-mode: multiply;
+  .input-field::placeholder {
+    color: var(--fg-3);
+    letter-spacing: 0.2em;
+  }
+  .input-field:focus {
+    border-color: var(--accent-edge);
+    background: var(--ink-1);
   }
 }
 
-/* Scrollbar premium */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-::-webkit-scrollbar-track {
-  background: #0a081a;
-}
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #3a1f7a, #1a0d3d);
-  border-radius: 10px;
-  border: 2px solid #0a081a;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #f5c542, #c8941b);
-}
+/* ==== Scrollbar ==== */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--ink-3); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-4); }
 
-/* Selection */
+/* ==== Selection ==== */
 ::selection {
-  background: #f5c542;
-  color: #04030a;
+  background: var(--accent);
+  color: var(--ink-0);
 }
+
+/* ==== Animations ==== */
+@keyframes pulse-accent {
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+  50% { box-shadow: 0 0 0 12px transparent; }
+}
+.pulse-accent { animation: pulse-accent 1.6s ease-in-out infinite; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rise { animation: rise 0.4s ease-out both; }
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Screen-level entrance */
+.screen { animation: rise 0.35s ease-out both; }

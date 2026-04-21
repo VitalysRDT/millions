@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { SiteHeader } from "@/components/layout/site-header";
 import { Avatar } from "@/components/common/avatar";
-import { Trophy, GamepadIcon, Award } from "lucide-react";
 
 interface HistoryEntry {
   id: string;
@@ -23,7 +22,9 @@ export default function MePage() {
     return (
       <>
         <SiteHeader />
-        <p className="p-10 text-center text-white/50">Chargement...</p>
+        <p className="p-10 text-center" style={{ color: "var(--fg-3)" }}>
+          Chargement…
+        </p>
       </>
     );
   }
@@ -31,66 +32,83 @@ export default function MePage() {
   return (
     <>
       <SiteHeader />
-      <main className="px-3 sm:px-6 py-8 sm:py-16">
-        <div className="max-w-3xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-4 sm:gap-6 mb-8 sm:mb-12"
-          >
-            <Avatar seed={user.avatarSeed} pseudo={user.pseudo} size={72} />
-            <div className="min-w-0">
-              <h1 className="text-display text-2xl sm:text-4xl font-bold mb-0.5 sm:mb-1 truncate">
-                {user.pseudo}
-              </h1>
-              <p className="text-white/50 text-xs sm:text-sm">Joueur Millions</p>
-            </div>
-          </motion.div>
-
-          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8 sm:mb-12">
-            <Stat icon={GamepadIcon} label="Parties" value={user.stats.totalGames.toString()} />
-            <Stat icon={Award} label="Victoires" value={user.stats.totalWins.toString()} />
-            <Stat
-              icon={Trophy}
-              label="Meilleur gain"
-              value={`${user.stats.bestScore.toLocaleString("fr-FR")} €`}
-            />
+      <main className="screen max-w-[900px] mx-auto px-5 sm:px-7 py-12 pb-20">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-5 mb-10"
+        >
+          <Avatar seed={user.avatarSeed} pseudo={user.pseudo} size={64} />
+          <div className="min-w-0">
+            <div className="eyebrow mb-1">Profil</div>
+            <h1
+              className="display m-0 truncate"
+              style={{ fontSize: "clamp(28px, 5vw, 40px)", lineHeight: 1 }}
+            >
+              {user.pseudo}
+            </h1>
           </div>
+        </motion.div>
 
-          <h2 className="text-xs sm:text-sm uppercase tracking-widest text-white/40 mb-3">
-            Historique
-          </h2>
-          <div className="surface-elevated rounded-2xl sm:rounded-3xl p-3 sm:p-4">
-            {!hist?.entries.length && (
-              <p className="text-center text-white/40 py-12">Aucune partie pour l'instant.</p>
-            )}
-            <div className="space-y-1">
-              {hist?.entries.map((e) => (
-                <div
-                  key={e.id}
-                  className="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-white/[0.03] text-xs sm:text-sm"
+        <div className="grid grid-cols-3 gap-3 mb-10">
+          <Stat label="Parties" value={user.stats.totalGames.toString()} />
+          <Stat label="Victoires" value={user.stats.totalWins.toString()} />
+          <Stat
+            label="Meilleur gain"
+            value={`${user.stats.bestScore.toLocaleString("fr-FR")} €`}
+            accent
+          />
+        </div>
+
+        <div className="eyebrow mb-3">Historique</div>
+        <div className="surface p-4">
+          {!hist?.entries.length && (
+            <p className="text-center py-10" style={{ color: "var(--fg-3)" }}>
+              Aucune partie pour l'instant.
+            </p>
+          )}
+          <div className="flex flex-col gap-1.5">
+            {hist?.entries.map((e) => (
+              <div
+                key={e.id}
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-[10px] text-sm"
+                style={{
+                  background: "var(--ink-2)",
+                  border: "1px solid var(--ink-3)",
+                }}
+              >
+                <span
+                  className="eyebrow text-[10px] flex-shrink-0"
+                  style={{ width: 74 }}
                 >
-                  <span className="uppercase tracking-wider text-white/40 w-16 sm:w-24 text-[10px] sm:text-xs flex-shrink-0">
-                    {e.gameType === "millionaire" ? "Millions" : "Bataille"}
-                  </span>
-                  <span
-                    className={`font-semibold text-[10px] sm:text-xs flex-shrink-0 ${
-                      e.isWinner ? "text-success" : "text-white/40"
-                    }`}
-                  >
-                    {e.isWinner ? "Victoire" : "Défaite"}
-                  </span>
-                  <span className="ml-auto font-mono text-gold text-xs sm:text-sm">
-                    {e.gameType === "millionaire"
-                      ? `${e.score.toLocaleString("fr-FR")} €`
-                      : ""}
-                  </span>
-                  <span className="text-[10px] sm:text-xs text-white/30 flex-shrink-0">
-                    {new Date(e.endedAt).toLocaleDateString("fr-FR")}
-                  </span>
-                </div>
-              ))}
-            </div>
+                  {e.gameType === "millionaire" ? "Millions" : "Bataille"}
+                </span>
+                <span
+                  className="text-xs font-semibold flex-shrink-0"
+                  style={{
+                    color: e.isWinner ? "var(--good)" : "var(--fg-3)",
+                    letterSpacing: "0.05em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {e.isWinner ? "Victoire" : "Défaite"}
+                </span>
+                <span
+                  className="ml-auto mono text-sm"
+                  style={{ color: "var(--accent)" }}
+                >
+                  {e.gameType === "millionaire"
+                    ? `${e.score.toLocaleString("fr-FR")} €`
+                    : ""}
+                </span>
+                <span
+                  className="text-xs flex-shrink-0"
+                  style={{ color: "var(--fg-3)" }}
+                >
+                  {new Date(e.endedAt).toLocaleDateString("fr-FR")}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </main>
@@ -98,14 +116,29 @@ export default function MePage() {
   );
 }
 
-function Stat({ icon: Icon, label, value }: { icon: typeof Trophy; label: string; value: string }) {
+function Stat({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
   return (
-    <div className="surface-elevated rounded-xl sm:rounded-2xl p-3 sm:p-5 text-center">
-      <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-gold mx-auto mb-1.5 sm:mb-2" />
-      <p className="text-white/40 text-[9px] sm:text-xs uppercase tracking-wider mb-0.5 sm:mb-1">
+    <div className="surface text-center p-4 sm:p-5">
+      <div className="eyebrow mb-1.5" style={{ fontSize: 10 }}>
         {label}
-      </p>
-      <p className="font-mono font-bold text-sm sm:text-xl text-white truncate">{value}</p>
+      </div>
+      <div
+        className="display truncate"
+        style={{
+          fontSize: "clamp(18px, 3vw, 28px)",
+          color: accent ? "var(--accent)" : "var(--fg-0)",
+        }}
+      >
+        {value}
+      </div>
     </div>
   );
 }

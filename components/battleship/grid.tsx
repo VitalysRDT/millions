@@ -1,7 +1,6 @@
 "use client";
 
 import { GRID_SIZE } from "@/lib/games/battleship/constants";
-import { cn } from "@/lib/utils/cn";
 
 export type GridCellState = "empty" | "ship" | "ship-preview" | "miss" | "hit" | "sunk";
 
@@ -30,72 +29,111 @@ export function Grid({
   const isHighlight = (x: number, y: number) =>
     highlight?.some(([hx, hy]) => hx === x && hy === y) ?? false;
 
-  // CSS grid: 11 cols (1 coord + 10 cells) or 10 cols if no coords. Cells use aspect-square.
   const cols = showCoords ? GRID_SIZE + 1 : GRID_SIZE;
 
   return (
     <div
       className="w-full mx-auto"
-      style={{
-        maxWidth: `min(100%, ${maxWidthPx}px)`,
-        filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.3))",
-      }}
+      style={{ maxWidth: `min(100%, ${maxWidthPx}px)` }}
       onMouseLeave={onCellLeave}
     >
       <div
         className="grid w-full"
-        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+        style={{
+          gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+          gap: 2,
+        }}
       >
-        {/* Top row: empty corner + letters */}
         {showCoords && (
           <>
             <div className="aspect-square" />
             {LETTERS.map((l) => (
               <div
                 key={l}
-                className="aspect-square flex items-center justify-center text-white/40 text-[10px] sm:text-xs font-mono"
+                className="aspect-square flex items-center justify-center mono"
+                style={{ fontSize: 9, color: "var(--fg-3)" }}
               >
                 {l}
               </div>
             ))}
           </>
         )}
-        {/* Body rows */}
         {Array.from({ length: GRID_SIZE }).map((_, y) => (
           <div key={y} className="contents">
             {showCoords && (
-              <div className="aspect-square flex items-center justify-center text-white/40 text-[10px] sm:text-xs font-mono">
+              <div
+                className="aspect-square flex items-center justify-center mono"
+                style={{ fontSize: 9, color: "var(--fg-3)" }}
+              >
                 {y + 1}
               </div>
             )}
             {Array.from({ length: GRID_SIZE }).map((_, x) => {
               const c = cells[x]?.[y] ?? "empty";
+              const hi = isHighlight(x, y);
+
+              let bg = "var(--ink-1)";
+              let border = "var(--ink-3)";
+              let content: React.ReactNode = null;
+
+              if (c === "ship") {
+                bg = "oklch(30% 0.06 270)";
+                border = "oklch(40% 0.08 270)";
+              } else if (c === "ship-preview") {
+                bg = "var(--accent-soft)";
+                border = "var(--accent-edge)";
+              } else if (c === "miss") {
+                bg = "var(--ink-2)";
+                content = (
+                  <span style={{ color: "var(--fg-3)", fontSize: 11 }}>·</span>
+                );
+              } else if (c === "hit") {
+                bg = "var(--bad)";
+                content = (
+                  <span
+                    style={{
+                      color: "var(--fg-0)",
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}
+                  >
+                    ✕
+                  </span>
+                );
+              } else if (c === "sunk") {
+                bg = "oklch(35% 0.18 25)";
+                content = (
+                  <span
+                    style={{
+                      color: "var(--fg-0)",
+                      fontSize: 11,
+                      fontWeight: 700,
+                    }}
+                  >
+                    ✕
+                  </span>
+                );
+              }
+
+              if (hi && c === "empty") {
+                bg = "var(--accent-soft)";
+              }
+
               return (
                 <button
                   key={`${x}-${y}`}
                   onClick={() => onCellClick?.(x, y)}
                   onMouseEnter={() => onCellHover?.(x, y)}
-                  className={cn(
-                    "aspect-square border border-white/5 transition-all relative touch-manipulation",
-                    c === "empty" && "bg-bg-deep/60 hover:bg-bg-surface",
-                    c === "ship" && "bg-gold/40 border-gold/60",
-                    c === "ship-preview" && "bg-gold/20 border-gold/40",
-                    c === "miss" && "bg-white/[0.04]",
-                    c === "hit" && "bg-danger/30 border-danger/60",
-                    c === "sunk" && "bg-danger/60 border-danger",
-                    isHighlight(x, y) && "bg-gold/30 ring-2 ring-gold",
-                  )}
+                  className="aspect-square relative touch-manipulation flex items-center justify-center transition-all"
+                  style={{
+                    background: bg,
+                    border: `1px solid ${hi ? "var(--accent)" : border}`,
+                    borderRadius: 3,
+                    cursor:
+                      onCellClick && c === "empty" ? "pointer" : "default",
+                  }}
                 >
-                  {c === "miss" && (
-                    <span className="absolute inset-0 flex items-center justify-center">
-                      <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-white/30" />
-                    </span>
-                  )}
-                  {(c === "hit" || c === "sunk") && (
-                    <span className="absolute inset-0 flex items-center justify-center text-danger text-sm sm:text-base md:text-lg font-bold">
-                      ✕
-                    </span>
-                  )}
+                  {content}
                 </button>
               );
             })}
