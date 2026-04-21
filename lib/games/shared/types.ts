@@ -72,7 +72,13 @@ export interface MillionaireSection {
 // ====== Battleship ======
 
 export type BattleshipPhase = "placement" | "battle" | "finished";
-export type ShotPattern = "single" | "line3" | "cross5";
+export type ShotPattern =
+  | "single"
+  | "line2"
+  | "line3"
+  | "tShape"
+  | "cross5"
+  | "area9";
 export type CellResult = "miss" | "hit" | "sunk";
 
 export interface BattleshipQuestionPublic extends MillionaireQuestionPublic {
@@ -97,12 +103,17 @@ export interface BattleshipSection {
   turnNumber: number;
   currentTurnUserId: string | null;
   placedReady: Record<string, boolean>; // userId -> bool
-  questionPhase: "idle" | "answering" | "revealing";
+  /**
+   * Question phase lifecycle:
+   *   idle → answering → (correct) shooting → idle (next turn)
+   *                    → (wrong)   revealing → idle (next turn)
+   */
+  questionPhase: "idle" | "answering" | "revealing" | "shooting";
   currentQuestion?: BattleshipQuestionPublic;
   questionDifficulty?: number;
   deadlineAt?: number;
   answeredCorrectly?: boolean;
-  /** Set only when questionPhase === "revealing" after a wrong answer. */
+  /** Set during revealing/shooting: correct answer index for public display. */
   revealedCorrectIndex?: number;
   /** Locked-in answer that triggered the reveal (for display). */
   revealedChosenIndex?: number;

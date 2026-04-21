@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import type { LobbyState, BattleshipQuestionPublic } from "@/lib/games/shared/types";
 import { Grid, type GridCellState } from "@/components/battleship/grid";
-import { GRID_SIZE } from "@/lib/games/battleship/constants";
+import { GRID_SIZE, patternLabel } from "@/lib/games/battleship/constants";
 import { DifficultyPicker } from "@/components/battleship/difficulty-picker";
 import { QuestionPanel } from "@/components/battleship/question-panel";
 import { postJson } from "@/lib/utils/fetcher";
@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 import { Avatar } from "@/components/common/avatar";
 import { nanoid } from "nanoid";
 import { expandPattern } from "@/lib/games/battleship/shot-resolver";
+import { useCountdown } from "@/hooks/use-countdown";
 import Link from "next/link";
 
 interface MyShipsResponse {
@@ -39,29 +40,23 @@ export function BattleView({
   const [pendingChoice, setPendingChoice] = useState<number | null>(null);
   const [hover, setHover] = useState<[number, number] | null>(null);
   const [busy, setBusy] = useState(false);
-  const [shootMode, setShootMode] = useState(false);
   const idemRef = useRef<string>(nanoid());
   const lastTurnRef = useRef<number>(bs.turnNumber);
+
+  const shootMode = myTurn && bs.questionPhase === "shooting";
 
   useEffect(() => {
     if (lastTurnRef.current !== bs.turnNumber) {
       lastTurnRef.current = bs.turnNumber;
       idemRef.current = nanoid();
       setPendingChoice(null);
-      setShootMode(false);
     }
   }, [bs.turnNumber]);
 
   useEffect(() => {
-    if (bs.answeredCorrectly === true && bs.questionPhase === "answering") {
-      setShootMode(true);
-    }
-  }, [bs.answeredCorrectly, bs.questionPhase]);
-
-  useEffect(() => {
     const id = setInterval(() => {
       postJson(`/api/battleship/${state.code}/tick`, {}).catch(() => undefined);
-    }, 2000);
+    }, 1500);
     return () => clearInterval(id);
   }, [state.code]);
 
@@ -132,7 +127,6 @@ export function BattleView({
         origin: [x, y],
         clientIdemKey: idemRef.current + ":shot",
       });
-      setShootMode(false);
     } catch (e) {
       console.error(e);
     } finally {
@@ -243,9 +237,10 @@ export function BattleView({
 
       {/* Action panel */}
       <div className="surface p-6 sm:p-7 min-h-[200px]">
-        {myTurn && bs.questionPhase === "idle" && !shootMode && (
+        {myTurn && bs.questionPhase === "idle" && (
           <DifficultyPicker onPick={askQuestion} disabled={busy} />
         )}
+
         {myTurn && bs.questionPhase === "answering" && bs.currentQuestion && bs.deadlineAt && (
           <QuestionPanel
             question={bs.currentQuestion as BattleshipQuestionPublic}
@@ -254,6 +249,7 @@ export function BattleView({
             onSelect={answer}
           />
         )}
+
         {myTurn && bs.questionPhase === "revealing" && bs.currentQuestion && bs.deadlineAt && (
           <QuestionPanel
             question={bs.currentQuestion as BattleshipQuestionPublic}
@@ -264,27 +260,70 @@ export function BattleView({
             onSelect={() => undefined}
           />
         )}
-        {myTurn && shootMode && (
-          <div className="text-center py-6">
-            <div className="chip accent mb-4 inline-flex">Bonne réponse</div>
-            <div className="display mb-2" style={{ fontSize: 24 }}>
-              Choisis une case pour tirer.
-            </div>
-            <div className="muted text-sm">
-              Survole la grille ennemie pour voir la zone d'impact.
-            </div>
-          </div>
+
+        {myTurn && bs.questionPhase === "shooting" && bs.currentQuestion && bs.deadlineAt && (
+          <ShootPanel
+            question={bs.currentQuestion as BattleshipQuestionPublic}
+            deadlineAt={bs.deadlineAt}
+            correctIdx={bs.revealedCorrectIndex}
+          />
         )}
+
         {!myTurn && (
           <div className="flex items-center justify-center gap-3.5 py-8">
             <Avatar seed={opponent.avatarSeed} pseudo={opponent.pseudo} size={36} />
-            <div className="display" style={{ fontSize: 22, color: "var(--fg-2)" }}>
-              {opponent.pseudo} prépare son tir…
+            <div className="display text-center" style={{ fontSize: 22, color: "var(--fg-2)" }}>
+              {bs.questionPhase === "answering"
+                ? `${opponent.pseudo} réfléchit à sa question…`
+                : bs.questionPhase === "revealing"
+                  ? `${opponent.pseudo} s'est trompé…`
+                  : bs.questionPhase === "shooting"
+                    ? `${opponent.pseudo} prépare son tir…`
+                    : `Tour de ${opponent.pseudo}`}
             </div>
           </div>
         )}
       </div>
       <span className="hidden">{me.pseudo}</span>
+    </div>
+  );
+}
+
+/** Shown when the player has answered correctly and must pick a cell. */
+function ShootPanel({
+  question,
+  deadlineAt,
+  correctIdx,
+}: {
+  question: BattleshipQuestionPublic;
+  deadlineAt: number;
+  correctIdx?: number;
+}) {
+  const remaining = useCountdown(deadlineAt);
+  const letters = ["A", "B", "C", "D"] as const;
+  const rewardLabel = patternLabel(question.patternReward);
+  return (
+    <div className="text-center py-3 sm:py-4">
+      <div className="chip accent mb-3 inline-flex" style={{ color: "var(--good)", borderColor: "var(--good)", background: "oklch(72% 0.18 150 / 0.14)" }}>
+        ✓ Bonne réponse
+        {correctIdx !== undefined && <> · {letters[correctIdx]}</>}
+      </div>
+      <div className="display mb-2" style={{ fontSize: "clamp(22px, 4vw, 28px)" }}>
+        Choisis une case à frapper
+      </div>
+      <div className="muted text-sm mb-4">
+        Récompense : {rewardLabel}. Survole la grille ennemie pour voir la zone d'impact.
+      </div>
+      <div
+        className="mono inline-flex px-3 py-1.5 rounded-full text-sm"
+        style={{
+          background: remaining <= 5 ? "oklch(65% 0.22 25 / 0.2)" : "var(--accent-soft)",
+          color: remaining <= 5 ? "var(--bad)" : "var(--accent)",
+          border: `1px solid ${remaining <= 5 ? "var(--bad)" : "var(--accent-edge)"}`,
+        }}
+      >
+        {remaining}s pour tirer
+      </div>
     </div>
   );
 }

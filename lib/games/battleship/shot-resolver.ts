@@ -12,27 +12,66 @@ export interface CellResult {
   shipSize?: number;
 }
 
+function inBounds([cx, cy]: [number, number]): boolean {
+  return cx >= 0 && cx < GRID_SIZE && cy >= 0 && cy < GRID_SIZE;
+}
+
 /** Expand a shot center cell + pattern into actual cells fired. */
 export function expandPattern(
   origin: [number, number],
   pattern: ShotPattern,
 ): [number, number][] {
   const [x, y] = origin;
-  if (pattern === "single") return [[x, y]];
-  if (pattern === "line3")
-    return [
-      [x, y],
-      [x - 1, y],
-      [x + 1, y],
-    ].filter(([cx, cy]) => cx >= 0 && cx < GRID_SIZE && cy >= 0 && cy < GRID_SIZE) as [number, number][];
-  // cross5
-  return [
-    [x, y],
-    [x - 1, y],
-    [x + 1, y],
-    [x, y - 1],
-    [x, y + 1],
-  ].filter(([cx, cy]) => cx >= 0 && cx < GRID_SIZE && cy >= 0 && cy < GRID_SIZE) as [number, number][];
+  let raw: [number, number][] = [];
+  switch (pattern) {
+    case "single":
+      raw = [[x, y]];
+      break;
+    case "line2":
+      // origin + right neighbour
+      raw = [
+        [x, y],
+        [x + 1, y],
+      ];
+      break;
+    case "line3":
+      // three cells in a horizontal line, origin at center
+      raw = [
+        [x - 1, y],
+        [x, y],
+        [x + 1, y],
+      ];
+      break;
+    case "tShape":
+      // horizontal line3 + one cell below the origin (inverted T)
+      raw = [
+        [x - 1, y],
+        [x, y],
+        [x + 1, y],
+        [x, y + 1],
+      ];
+      break;
+    case "cross5":
+      // plus sign
+      raw = [
+        [x, y],
+        [x - 1, y],
+        [x + 1, y],
+        [x, y - 1],
+        [x, y + 1],
+      ];
+      break;
+    case "area9":
+      // full 3x3 centred on origin
+      raw = [];
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          raw.push([x + dx, y + dy]);
+        }
+      }
+      break;
+  }
+  return raw.filter(inBounds);
 }
 
 export function validateShotCells(

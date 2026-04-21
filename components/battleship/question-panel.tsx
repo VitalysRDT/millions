@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { BattleshipQuestionPublic } from "@/lib/games/shared/types";
 import { AnswerButton } from "@/components/millionaire/answer-button";
 import { useCountdown } from "@/hooks/use-countdown";
+import { patternLabel } from "@/lib/games/battleship/constants";
 
 export function QuestionPanel({
   question,
@@ -22,12 +23,7 @@ export function QuestionPanel({
 }) {
   const remaining = useCountdown(deadlineAt);
   const isRevealed = revealedCorrectIdx !== undefined;
-  const rewardLabel =
-    question.patternReward === "single"
-      ? "Tir simple"
-      : question.patternReward === "line3"
-        ? "Ligne 3 cases"
-        : "Croix 5 cases";
+  const rewardLabel = patternLabel(question.patternReward);
 
   return (
     <motion.div

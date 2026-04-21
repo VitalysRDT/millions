@@ -1,25 +1,30 @@
 "use client";
 
-import { patternForDifficulty, patternCellCount } from "@/lib/games/battleship/constants";
+import {
+  patternForDifficulty,
+  patternCellCount,
+  patternLabel,
+} from "@/lib/games/battleship/constants";
 
 const DIFFS = [1, 2, 3, 4, 5, 6] as const;
 
 const labels: Record<number, string> = {
   1: "Facile",
-  2: "Facile",
+  2: "Facile+",
   3: "Moyen",
-  4: "Moyen",
+  4: "Moyen+",
   5: "Difficile",
   6: "Expert",
 };
 
+// Mini glyph schematic of each pattern. Uses ● for the origin and ○ for extras.
 const glyphs: Record<number, string> = {
-  1: "·",
-  2: "·",
-  3: "—",
-  4: "—",
-  5: "+",
-  6: "■",
+  1: "●",
+  2: "●●",
+  3: "●●●",
+  4: "⊥",
+  5: "✚",
+  6: "▦",
 };
 
 export function DifficultyPicker({
@@ -38,8 +43,7 @@ export function DifficultyPicker({
         {DIFFS.map((d) => {
           const p = patternForDifficulty(d);
           const cells = patternCellCount(p);
-          const rewardLabel =
-            cells === 1 ? "1 tir" : cells === 3 ? "Ligne 3" : "Croix 5";
+          const label = patternLabel(p);
           return (
             <button
               key={d}
@@ -69,17 +73,18 @@ export function DifficultyPicker({
               <div
                 className="display leading-none mb-3"
                 style={{
-                  fontSize: 46,
+                  fontSize: 40,
                   color: "var(--accent)",
+                  letterSpacing: "-0.05em",
                 }}
               >
                 {glyphs[d]}
               </div>
               <div className="font-semibold mb-1" style={{ fontSize: 17 }}>
-                Niveau {d}
+                Niveau {d} · {labels[d]}
               </div>
               <div className="muted text-xs">
-                {labels[d]} · {rewardLabel}
+                {label} · {cells} case{cells > 1 ? "s" : ""}
               </div>
             </button>
           );

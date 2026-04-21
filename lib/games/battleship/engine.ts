@@ -13,6 +13,8 @@ import { shuffleIndices } from "@/lib/games/shared/shuffle";
 import {
   patternForDifficulty,
   QUESTION_TIMER_MS,
+  SHOOT_TIMER_MS,
+  REVEAL_TIMER_MS,
   type ShotPattern,
 } from "./constants";
 import {
@@ -195,13 +197,18 @@ export async function answerBattleshipQuestion(opts: {
   await applyLobbyMutation(opts.code, (state) => {
     const m = state.battleship!;
     m.answeredCorrectly = correct;
-    if (!correct) {
-      // Enter a short "revealing" phase so the player sees the right answer
-      // before the turn passes to the opponent. tickBattleship will expire it.
+    m.revealedCorrectIndex = correctIndex;
+    m.revealedChosenIndex = opts.chosenIndex;
+    if (correct) {
+      // Move to "shooting" phase — player now has SHOOT_TIMER_MS to pick a cell.
+      // Turn does NOT pass yet. tickBattleship forfeits if the deadline expires.
+      m.questionPhase = "shooting";
+      m.deadlineAt = Date.now() + SHOOT_TIMER_MS;
+    } else {
+      // Wrong answer: reveal the correct one for REVEAL_TIMER_MS, then the tick
+      // passes the turn to the opponent.
       m.questionPhase = "revealing";
-      m.revealedCorrectIndex = correctIndex;
-      m.revealedChosenIndex = opts.chosenIndex;
-      m.deadlineAt = Date.now() + 2500;
+      m.deadlineAt = Date.now() + REVEAL_TIMER_MS;
     }
     return state;
   });
@@ -228,7 +235,7 @@ export async function fireShot(opts: {
   if (!bs) throw new Error("no_game");
   if (bs.phase !== "battle") throw new Error("not_in_battle");
   if (bs.currentTurnUserId !== opts.userId) throw new Error("not_your_turn");
-  if (!bs.answeredCorrectly) throw new Error("answer_required");
+  if (bs.questionPhase !== "shooting") throw new Error("not_in_shooting_phase");
   if (!bs.currentQuestion) throw new Error("no_question");
   const reward = bs.currentQuestion.patternReward;
 
@@ -276,6 +283,8 @@ export async function fireShot(opts: {
       m.questionDifficulty = undefined;
       m.deadlineAt = undefined;
       m.answeredCorrectly = undefined;
+      m.revealedCorrectIndex = undefined;
+      m.revealedChosenIndex = undefined;
       m.currentTurnUserId = opponent.userId;
       m.turnNumber++;
     }
@@ -299,28 +308,52 @@ export async function fireShot(opts: {
   return { results, gameOver };
 }
 
-/** Lazy tick: expire question if deadline passed and pass turn. */
+/** Lazy tick: advance question phases when their deadlines expire. */
 export async function tickBattleship(code: string): Promise<void> {
+  // We need access to the per-turn correct answer to transition
+  // answering → revealing on timeout. Read it before the mutation.
+  let pendingCorrectIndex: number | null = null;
+  const pre = await getLobbyState(code);
+  const preBs = pre?.battleship;
+  if (
+    preBs &&
+    preBs.phase === "battle" &&
+    preBs.questionPhase === "answering" &&
+    preBs.deadlineAt &&
+    Date.now() > preBs.deadlineAt
+  ) {
+    try {
+      const raw = await redis().get<string | number>(
+        k.gameBattleshipCorrect(preBs.gameId, preBs.turnNumber),
+      );
+      pendingCorrectIndex = Number(raw);
+    } catch {
+      pendingCorrectIndex = null;
+    }
+  }
+
   await applyLobbyMutation(code, (state) => {
     const bs = state.battleship;
     if (!bs) return state;
     if (bs.phase !== "battle") return state;
-    if (bs.questionPhase === "answering" && bs.deadlineAt && Date.now() > bs.deadlineAt) {
-      // Forfeit turn
-      const other = state.players.find((p) => p.userId !== bs.currentTurnUserId);
-      bs.questionPhase = "idle";
-      bs.currentQuestion = undefined;
-      bs.deadlineAt = undefined;
-      bs.questionDifficulty = undefined;
+    const now = Date.now();
+
+    if (bs.questionPhase === "answering" && bs.deadlineAt && now > bs.deadlineAt) {
+      // Timeout without an answer: show the correct answer for REVEAL_TIMER_MS
+      // then pass the turn.
+      bs.questionPhase = "revealing";
       bs.answeredCorrectly = false;
-      bs.revealedCorrectIndex = undefined;
+      bs.revealedCorrectIndex =
+        pendingCorrectIndex !== null && Number.isInteger(pendingCorrectIndex)
+          ? pendingCorrectIndex
+          : undefined;
       bs.revealedChosenIndex = undefined;
-      bs.currentTurnUserId = other?.userId ?? null;
-      bs.turnNumber++;
+      bs.deadlineAt = now + REVEAL_TIMER_MS;
+      return state;
     }
-    // After a wrong answer, a brief "revealing" phase shows the right answer.
-    // When its deadline passes, pass turn to the opponent.
-    if (bs.questionPhase === "revealing" && bs.deadlineAt && Date.now() > bs.deadlineAt) {
+
+    if (bs.questionPhase === "revealing" && bs.deadlineAt && now > bs.deadlineAt) {
+      // End of reveal: turn passes to opponent.
       const other = state.players.find((p) => p.userId !== bs.currentTurnUserId);
       bs.questionPhase = "idle";
       bs.currentQuestion = undefined;
@@ -331,7 +364,24 @@ export async function tickBattleship(code: string): Promise<void> {
       bs.revealedChosenIndex = undefined;
       bs.currentTurnUserId = other?.userId ?? null;
       bs.turnNumber++;
+      return state;
     }
+
+    if (bs.questionPhase === "shooting" && bs.deadlineAt && now > bs.deadlineAt) {
+      // Player had a correct answer but didn't pick a cell in time: forfeit turn.
+      const other = state.players.find((p) => p.userId !== bs.currentTurnUserId);
+      bs.questionPhase = "idle";
+      bs.currentQuestion = undefined;
+      bs.deadlineAt = undefined;
+      bs.questionDifficulty = undefined;
+      bs.answeredCorrectly = undefined;
+      bs.revealedCorrectIndex = undefined;
+      bs.revealedChosenIndex = undefined;
+      bs.currentTurnUserId = other?.userId ?? null;
+      bs.turnNumber++;
+      return state;
+    }
+
     return state;
   });
 }
