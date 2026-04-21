@@ -189,20 +189,19 @@ export async function answerBattleshipQuestion(opts: {
 
   const r = redis();
   const correctRaw = await r.get<string | number>(k.gameBattleshipCorrect(bs.gameId, bs.turnNumber));
-  const correct = Number(correctRaw) === opts.chosenIndex;
+  const correctIndex = Number(correctRaw);
+  const correct = correctIndex === opts.chosenIndex;
 
   await applyLobbyMutation(opts.code, (state) => {
     const m = state.battleship!;
     m.answeredCorrectly = correct;
     if (!correct) {
-      // Pass turn to opponent
-      m.questionPhase = "idle";
-      m.currentQuestion = undefined;
-      m.questionDifficulty = undefined;
-      m.deadlineAt = undefined;
-      const other = state.players.find((p) => p.userId !== opts.userId);
-      m.currentTurnUserId = other?.userId ?? null;
-      m.turnNumber++;
+      // Enter a short "revealing" phase so the player sees the right answer
+      // before the turn passes to the opponent. tickBattleship will expire it.
+      m.questionPhase = "revealing";
+      m.revealedCorrectIndex = correctIndex;
+      m.revealedChosenIndex = opts.chosenIndex;
+      m.deadlineAt = Date.now() + 2500;
     }
     return state;
   });
@@ -314,6 +313,22 @@ export async function tickBattleship(code: string): Promise<void> {
       bs.deadlineAt = undefined;
       bs.questionDifficulty = undefined;
       bs.answeredCorrectly = false;
+      bs.revealedCorrectIndex = undefined;
+      bs.revealedChosenIndex = undefined;
+      bs.currentTurnUserId = other?.userId ?? null;
+      bs.turnNumber++;
+    }
+    // After a wrong answer, a brief "revealing" phase shows the right answer.
+    // When its deadline passes, pass turn to the opponent.
+    if (bs.questionPhase === "revealing" && bs.deadlineAt && Date.now() > bs.deadlineAt) {
+      const other = state.players.find((p) => p.userId !== bs.currentTurnUserId);
+      bs.questionPhase = "idle";
+      bs.currentQuestion = undefined;
+      bs.deadlineAt = undefined;
+      bs.questionDifficulty = undefined;
+      bs.answeredCorrectly = undefined;
+      bs.revealedCorrectIndex = undefined;
+      bs.revealedChosenIndex = undefined;
       bs.currentTurnUserId = other?.userId ?? null;
       bs.turnNumber++;
     }

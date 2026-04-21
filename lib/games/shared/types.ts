@@ -97,11 +97,15 @@ export interface BattleshipSection {
   turnNumber: number;
   currentTurnUserId: string | null;
   placedReady: Record<string, boolean>; // userId -> bool
-  questionPhase: "idle" | "answering";
+  questionPhase: "idle" | "answering" | "revealing";
   currentQuestion?: BattleshipQuestionPublic;
   questionDifficulty?: number;
   deadlineAt?: number;
   answeredCorrectly?: boolean;
+  /** Set only when questionPhase === "revealing" after a wrong answer. */
+  revealedCorrectIndex?: number;
+  /** Locked-in answer that triggered the reveal (for display). */
+  revealedChosenIndex?: number;
   shipsStatus: Record<string, BattleshipShipsStatus>; // public count + sunk sizes
   publicGrids: Record<string, BattleshipPublicCell[]>; // shots fired ON this user
   lastShot?: {

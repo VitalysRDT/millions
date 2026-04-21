@@ -20,50 +20,43 @@ export function RevealOverlay({
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-40 pointer-events-none flex items-center justify-center px-4"
+        initial={{ opacity: 0, y: -30 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -30 }}
+        transition={{ type: "spring", stiffness: 280, damping: 22 }}
+        className="fixed left-1/2 -translate-x-1/2 top-20 sm:top-24 z-40 pointer-events-none flex items-center justify-center px-4"
       >
-        <span
-          className="absolute inset-0"
-          style={{
-            background: "oklch(10% 0.02 280 / 0.6)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-          }}
-        />
-        <motion.div
-          initial={{ scale: 0.8, y: -20 }}
-          animate={{ scale: 1, y: 0 }}
-          exit={{ scale: 0.8, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 280, damping: 22 }}
-          className="surface relative flex items-center gap-5 px-10 py-7 md:px-14 md:py-8"
+        <div
+          className="surface flex items-center gap-4 px-6 py-4 sm:px-8 sm:py-5"
           style={{
             borderColor: color,
-            boxShadow: `0 0 60px ${ok ? "oklch(72% 0.18 150 / 0.35)" : "oklch(65% 0.22 25 / 0.35)"}`,
+            boxShadow: `0 0 40px ${ok ? "oklch(72% 0.18 150 / 0.35)" : "oklch(65% 0.22 25 / 0.35)"}, 0 20px 40px -10px oklch(10% 0.02 280 / 0.8)`,
+            background:
+              "linear-gradient(180deg, oklch(13% 0.025 275 / 0.98), oklch(12% 0.025 275 / 0.98))",
+            backdropFilter: "blur(14px)",
+            WebkitBackdropFilter: "blur(14px)",
           }}
         >
           <span
             className="flex-shrink-0 flex items-center justify-center rounded-full"
             style={{
-              width: 72,
-              height: 72,
+              width: 44,
+              height: 44,
               background: ok ? "oklch(72% 0.18 150 / 0.25)" : "oklch(65% 0.22 25 / 0.25)",
               color,
             }}
           >
             {ok ? (
-              <Check className="w-10 h-10 stroke-[3]" />
+              <Check className="w-6 h-6 stroke-[3]" />
             ) : (
-              <X className="w-10 h-10 stroke-[3]" />
+              <X className="w-6 h-6 stroke-[3]" />
             )}
           </span>
-          <div>
+          <div className="text-left">
             <p
-              className="text-xs uppercase mb-1"
+              className="text-[10px] uppercase mb-0.5"
               style={{
-                letterSpacing: "0.25em",
+                letterSpacing: "0.22em",
                 color: "var(--fg-2)",
               }}
             >
@@ -72,7 +65,7 @@ export function RevealOverlay({
             <p
               className="display"
               style={{
-                fontSize: "clamp(28px, 4.5vw, 44px)",
+                fontSize: "clamp(20px, 3vw, 28px)",
                 lineHeight: 1,
                 color,
               }}
@@ -80,7 +73,7 @@ export function RevealOverlay({
               {ok ? "Bonne réponse !" : "Mauvaise réponse"}
             </p>
           </div>
-        </motion.div>
+        </div>
       </motion.div>
     </AnimatePresence>
   );

@@ -254,6 +254,16 @@ export function BattleView({
             onSelect={answer}
           />
         )}
+        {myTurn && bs.questionPhase === "revealing" && bs.currentQuestion && bs.deadlineAt && (
+          <QuestionPanel
+            question={bs.currentQuestion as BattleshipQuestionPublic}
+            deadlineAt={bs.deadlineAt}
+            selectedIdx={bs.revealedChosenIndex ?? pendingChoice}
+            revealedCorrectIdx={bs.revealedCorrectIndex}
+            myChoiceWasCorrect={false}
+            onSelect={() => undefined}
+          />
+        )}
         {myTurn && shootMode && (
           <div className="text-center py-6">
             <div className="chip accent mb-4 inline-flex">Bonne réponse</div>
