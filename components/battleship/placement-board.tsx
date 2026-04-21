@@ -82,6 +82,12 @@ export function PlacementBoard({
   const [hoverCell, setHoverCell] = useState<[number, number] | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * Global orientation. Toggled by the "Pivoter" button (or R/Space) BEFORE
+   * starting a drag. Applied to every new ship picked from the dock.
+   */
+  const [orientation, setOrientation] = useState<"H" | "V">("H");
+  const horizontalPref = orientation === "H";
 
   const remaining = useMemo(() => {
     const pool = [...FLEET];
@@ -114,7 +120,8 @@ export function PlacementBoard({
     setPlaced([]);
   };
 
-  const rotateDrag = () => {
+  const toggleOrientation = () => {
+    setOrientation((o) => (o === "H" ? "V" : "H"));
     setDrag((d) => (d ? { ...d, horizontal: !d.horizontal } : d));
   };
 
@@ -137,12 +144,12 @@ export function PlacementBoard({
     if (all.length === FLEET.length) pushAndSet(all);
   };
 
-  // Start drag from the dock (new ship)
+  // Start drag from the dock (new ship). Uses the current global orientation.
   const startDragFromDock = (size: number, e: React.PointerEvent) => {
     e.preventDefault();
     setDrag({
       size,
-      horizontal: true,
+      horizontal: horizontalPref,
       grabOffset: 0,
       x: e.clientX,
       y: e.clientY,
@@ -165,6 +172,19 @@ export function PlacementBoard({
   };
 
   // Global pointer handlers
+  // Global key handler — orientation is togglable any time, with or without
+  // an active drag (the user often wants to pre-select before grabbing).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "r" || e.key === "R") {
+        toggleOrientation();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!drag) return;
     const onMove = (e: PointerEvent) => {
@@ -200,10 +220,7 @@ export function PlacementBoard({
       pushAndSet(next);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "r" || e.key === "R" || e.key === " ") {
-        e.preventDefault();
-        rotateDrag();
-      } else if (e.key === "Escape") {
+      if (e.key === "Escape") {
         setDrag(null);
         setHoverCell(null);
       }
@@ -311,14 +328,14 @@ export function PlacementBoard({
           Place ta flotte
         </h2>
         <p className="muted text-sm mt-3 px-2">
-          Attrape un bateau du dock, glisse-le sur la grille, relâche pour le poser.{" "}
-          <span className="hidden sm:inline">Touche R ou Espace pour tourner.</span>
+          Choisis l'orientation, puis attrape un bateau du dock et glisse-le sur la grille.{" "}
+          <span className="hidden sm:inline">Raccourci : touche R.</span>
         </p>
       </div>
 
       {/* DOCK — remaining ships */}
       <div
-        className="surface-soft flex flex-wrap items-center justify-center gap-3 p-4 mb-6"
+        className="surface-soft flex flex-wrap items-center justify-center gap-3 p-4 mb-4"
         style={{ minHeight: 90 }}
       >
         <div className="eyebrow mr-2">Flotte</div>
@@ -329,11 +346,48 @@ export function PlacementBoard({
           <ShipDockItem
             key={`${size}-${i}`}
             size={size}
-            horizontal={drag?.size === size ? drag.horizontal : true}
+            horizontal={horizontalPref}
             onPointerDown={(e) => startDragFromDock(size, e)}
             dimmed={drag?.size === size && drag?.fromIndex === undefined}
           />
         ))}
+      </div>
+
+      {/* ORIENTATION TOGGLE — chosen BEFORE picking a ship. */}
+      <div className="flex justify-center mb-6">
+        <button
+          onClick={toggleOrientation}
+          className="flex items-center gap-3 px-4 py-2 rounded-xl transition-all"
+          style={{
+            background: "var(--ink-2)",
+            border: "1px solid var(--ink-3)",
+            cursor: "pointer",
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.borderColor = "var(--accent-edge)")
+          }
+          onMouseLeave={(e) => (e.currentTarget.style.borderColor = "")}
+          title="Choisir avant de prendre un bateau (raccourci : R)"
+        >
+          <span className="eyebrow" style={{ fontSize: 10 }}>
+            Orientation
+          </span>
+          <span
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md"
+            style={{
+              background: "var(--accent-soft)",
+              border: "1px solid var(--accent-edge)",
+              color: "var(--accent)",
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+            }}
+          >
+            <RotateCw className="w-3.5 h-3.5" />
+            {horizontalPref ? "Horizontal" : "Vertical"}
+          </span>
+        </button>
       </div>
 
       {/* GRID */}
@@ -349,15 +403,6 @@ export function PlacementBoard({
 
       {/* ACTIONS */}
       <div className="flex flex-wrap gap-2.5 justify-center mb-5">
-        <button
-          onClick={rotateDrag}
-          disabled={!drag}
-          className="btn"
-          title="Pivoter le bateau en main (R / Espace)"
-        >
-          <RotateCw className="w-4 h-4" />
-          <span className="hidden sm:inline">Pivoter</span>
-        </button>
         <button onClick={undo} disabled={history.length === 0} className="btn">
           <Undo2 className="w-4 h-4" />
           <span className="hidden sm:inline">Annuler</span>
