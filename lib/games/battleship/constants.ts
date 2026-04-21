@@ -80,3 +80,30 @@ export function patternLabel(p: ShotPattern): string {
       return "Zone 3×3";
   }
 }
+
+/** Rotation in degrees. Passed from client to server for shape-aware patterns. */
+export type Rotation = 0 | 90 | 180 | 270;
+
+/**
+ * Number of visually distinct rotations a pattern has.
+ *   1 = fully symmetric (single/cross5/area9)
+ *   2 = line patterns (horizontal / vertical)
+ *   4 = tShape (four arm directions)
+ */
+export function patternRotationCount(p: ShotPattern): 1 | 2 | 4 {
+  switch (p) {
+    case "single":
+    case "cross5":
+    case "area9":
+      return 1;
+    case "line2":
+    case "line3":
+      return 2;
+    case "tShape":
+      return 4;
+  }
+}
+
+export function patternCanRotate(p: ShotPattern): boolean {
+  return patternRotationCount(p) > 1;
+}

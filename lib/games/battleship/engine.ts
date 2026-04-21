@@ -15,6 +15,7 @@ import {
   QUESTION_TIMER_MS,
   REVEAL_TIMER_MS,
   SHOT_REVEAL_MS,
+  type Rotation,
   type ShotPattern,
 } from "./constants";
 import {
@@ -226,6 +227,7 @@ export async function fireShot(opts: {
   code: string;
   userId: string;
   origin: [number, number];
+  rotation?: Rotation;
 }): Promise<{
   results: { x: number; y: number; result: "miss" | "hit" | "sunk"; shipSize?: number }[];
   gameOver: boolean;
@@ -240,8 +242,11 @@ export async function fireShot(opts: {
   if (!bs.currentQuestion) throw new Error("no_question");
   const reward = bs.currentQuestion.patternReward;
 
-  // Server-side expansion — client cannot cheat by crafting arbitrary cells
-  const cells = expandPattern(opts.origin, reward);
+  // Server-side expansion — client cannot cheat by crafting arbitrary cells.
+  // Rotation is the only freedom the client gets, and only for non-symmetric
+  // patterns (line2/line3/tShape). For symmetric patterns it's a no-op.
+  const rotation: Rotation = opts.rotation ?? 0;
+  const cells = expandPattern(opts.origin, reward, rotation);
   validateShotCells(cells, reward);
 
   const opponent = peek.players.find((p) => p.userId !== opts.userId);

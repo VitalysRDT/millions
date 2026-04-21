@@ -1,4 +1,9 @@
-import { GRID_SIZE, type ShotPattern, patternCellCount } from "./constants";
+import {
+  GRID_SIZE,
+  type Rotation,
+  type ShotPattern,
+  patternCellCount,
+} from "./constants";
 import type { PlacedShip } from "./placement-validator";
 
 export interface InternalShipState extends PlacedShip {
@@ -16,62 +21,83 @@ function inBounds([cx, cy]: [number, number]): boolean {
   return cx >= 0 && cx < GRID_SIZE && cy >= 0 && cy < GRID_SIZE;
 }
 
-/** Expand a shot center cell + pattern into actual cells fired. */
+/** Rotate a (dx, dy) offset around the origin by the given degrees (clockwise). */
+function rotateOffset(
+  [dx, dy]: [number, number],
+  rotation: Rotation,
+): [number, number] {
+  switch (rotation) {
+    case 0:
+      return [dx, dy];
+    case 90:
+      return [-dy, dx];
+    case 180:
+      return [-dx, -dy];
+    case 270:
+      return [dy, -dx];
+  }
+}
+
+/** Offset definition for each pattern at rotation 0 (relative to origin). */
+function patternOffsets(pattern: ShotPattern): [number, number][] {
+  switch (pattern) {
+    case "single":
+      return [[0, 0]];
+    case "line2":
+      // origin + one cell to the right
+      return [
+        [0, 0],
+        [1, 0],
+      ];
+    case "line3":
+      // three in a horizontal line, origin centred
+      return [
+        [-1, 0],
+        [0, 0],
+        [1, 0],
+      ];
+    case "tShape":
+      // line3 + one cell below the centre = ⊥
+      return [
+        [-1, 0],
+        [0, 0],
+        [1, 0],
+        [0, 1],
+      ];
+    case "cross5":
+      return [
+        [0, 0],
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1],
+      ];
+    case "area9": {
+      const out: [number, number][] = [];
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          out.push([dx, dy]);
+        }
+      }
+      return out;
+    }
+  }
+}
+
+/**
+ * Expand an origin cell + pattern (+ optional rotation) into the cells actually fired.
+ * Rotation has no visual effect on symmetric patterns but is accepted anyway.
+ */
 export function expandPattern(
   origin: [number, number],
   pattern: ShotPattern,
+  rotation: Rotation = 0,
 ): [number, number][] {
   const [x, y] = origin;
-  let raw: [number, number][] = [];
-  switch (pattern) {
-    case "single":
-      raw = [[x, y]];
-      break;
-    case "line2":
-      // origin + right neighbour
-      raw = [
-        [x, y],
-        [x + 1, y],
-      ];
-      break;
-    case "line3":
-      // three cells in a horizontal line, origin at center
-      raw = [
-        [x - 1, y],
-        [x, y],
-        [x + 1, y],
-      ];
-      break;
-    case "tShape":
-      // horizontal line3 + one cell below the origin (inverted T)
-      raw = [
-        [x - 1, y],
-        [x, y],
-        [x + 1, y],
-        [x, y + 1],
-      ];
-      break;
-    case "cross5":
-      // plus sign
-      raw = [
-        [x, y],
-        [x - 1, y],
-        [x + 1, y],
-        [x, y - 1],
-        [x, y + 1],
-      ];
-      break;
-    case "area9":
-      // full 3x3 centred on origin
-      raw = [];
-      for (let dx = -1; dx <= 1; dx++) {
-        for (let dy = -1; dy <= 1; dy++) {
-          raw.push([x + dx, y + dy]);
-        }
-      }
-      break;
-  }
-  return raw.filter(inBounds);
+  return patternOffsets(pattern)
+    .map((o) => rotateOffset(o, rotation))
+    .map(([dx, dy]): [number, number] => [x + dx, y + dy])
+    .filter(inBounds);
 }
 
 export function validateShotCells(

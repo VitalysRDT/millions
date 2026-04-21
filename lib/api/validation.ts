@@ -51,5 +51,9 @@ export const ShootInput = z.object({
     z.number().int().min(0).max(9),
     z.number().int().min(0).max(9),
   ]),
+  /** Clockwise rotation of the shot pattern, in degrees. Defaults to 0. */
+  rotation: z
+    .union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)])
+    .optional(),
   clientIdemKey: z.string().min(8).max(64),
 });

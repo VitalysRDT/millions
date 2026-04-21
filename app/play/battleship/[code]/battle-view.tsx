@@ -4,7 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import type { LobbyState, BattleshipQuestionPublic } from "@/lib/games/shared/types";
 import { Grid, type GridCellState } from "@/components/battleship/grid";
-import { GRID_SIZE, patternLabel } from "@/lib/games/battleship/constants";
+import {
+  GRID_SIZE,
+  patternLabel,
+  patternCanRotate,
+  patternRotationCount,
+  type Rotation,
+} from "@/lib/games/battleship/constants";
 import { DifficultyPicker } from "@/components/battleship/difficulty-picker";
 import { QuestionPanel } from "@/components/battleship/question-panel";
 import { postJson } from "@/lib/utils/fetcher";
@@ -12,7 +18,7 @@ import { motion } from "framer-motion";
 import { Avatar } from "@/components/common/avatar";
 import { nanoid } from "nanoid";
 import { expandPattern } from "@/lib/games/battleship/shot-resolver";
-import { Check, RotateCcw, Undo2 } from "lucide-react";
+import { Check, RotateCcw, RotateCw, Undo2 } from "lucide-react";
 import Link from "next/link";
 
 interface MyShipsResponse {
@@ -41,6 +47,7 @@ export function BattleView({
   const [hover, setHover] = useState<[number, number] | null>(null);
   const [aim, setAim] = useState<[number, number] | null>(null);
   const [aimHistory, setAimHistory] = useState<[number, number][]>([]);
+  const [rotation, setRotation] = useState<Rotation>(0);
   const [busy, setBusy] = useState(false);
   const idemRef = useRef<string>(nanoid());
   const lastTurnRef = useRef<number>(bs.turnNumber);
@@ -54,6 +61,7 @@ export function BattleView({
       setPendingChoice(null);
       setAim(null);
       setAimHistory([]);
+      setRotation(0);
     }
   }, [bs.turnNumber]);
 
@@ -62,6 +70,7 @@ export function BattleView({
     if (!shootMode) {
       setAim(null);
       setAimHistory([]);
+      setRotation(0);
     }
   }, [shootMode]);
 
@@ -81,8 +90,9 @@ export function BattleView({
   }
 
   const reward = bs.currentQuestion?.patternReward ?? "single";
-  const aimCells: [number, number][] = aim ? expandPattern(aim, reward) : [];
-  const hoverCells: [number, number][] = shootMode && hover && !aim ? expandPattern(hover, reward) : [];
+  const aimCells: [number, number][] = aim ? expandPattern(aim, reward, rotation) : [];
+  const hoverCells: [number, number][] =
+    shootMode && hover && !aim ? expandPattern(hover, reward, rotation) : [];
   const highlightCells = aim ? aimCells : hoverCells;
 
   const enemyGrid: GridCellState[][] = (() => {
@@ -153,6 +163,7 @@ export function BattleView({
     try {
       await postJson(`/api/battleship/${state.code}/shoot`, {
         origin: [aim[0], aim[1]],
+        rotation,
         clientIdemKey: idemRef.current + ":shot",
       });
     } catch (e) {
@@ -160,6 +171,13 @@ export function BattleView({
     } finally {
       setBusy(false);
     }
+  };
+
+  const rotateShot = () => {
+    const count = patternRotationCount(reward);
+    if (count === 1) return;
+    const step = 360 / count; // 180 for line2/line3, 90 for tShape
+    setRotation((r) => (((r + step) % 360) as Rotation));
   };
 
   const clearAim = () => {
@@ -311,9 +329,11 @@ export function BattleView({
             question={bs.currentQuestion as BattleshipQuestionPublic}
             aim={aim}
             aimHistoryLength={aimHistory.length}
+            rotation={rotation}
             onConfirm={confirmShot}
             onClear={clearAim}
             onUndo={undoAim}
+            onRotate={rotateShot}
             busy={busy}
           />
         )}
@@ -357,20 +377,25 @@ function ShootPanel({
   question,
   aim,
   aimHistoryLength,
+  rotation,
   onConfirm,
   onClear,
   onUndo,
+  onRotate,
   busy,
 }: {
   question: BattleshipQuestionPublic;
   aim: [number, number] | null;
   aimHistoryLength: number;
+  rotation: Rotation;
   onConfirm: () => void;
   onClear: () => void;
   onUndo: () => void;
+  onRotate: () => void;
   busy: boolean;
 }) {
   const rewardLabel = patternLabel(question.patternReward);
+  const canRotate = patternCanRotate(question.patternReward);
   const LETTERS = "ABCDEFGHIJ";
 
   return (
@@ -395,9 +420,23 @@ function ShootPanel({
         {aim
           ? `Cible : ${LETTERS[aim[0]]}${aim[1] + 1} · ${rewardLabel}`
           : `Tape une case de la grille ennemie. Récompense : ${rewardLabel}.`}
+        {canRotate && (
+          <> · Rotation : <strong style={{ color: "var(--accent)" }}>{rotation}°</strong></>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2.5 justify-center">
+        {canRotate && (
+          <button
+            onClick={onRotate}
+            disabled={busy}
+            className="btn"
+            title="Pivoter le pattern (sans quitter la visée)"
+          >
+            <RotateCw className="w-4 h-4" />
+            <span className="hidden sm:inline">Pivoter</span>
+          </button>
+        )}
         <button
           onClick={onUndo}
           disabled={aimHistoryLength === 0 || busy}

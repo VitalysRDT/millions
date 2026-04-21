@@ -24,6 +24,7 @@ export async function POST(
         code: code.toUpperCase(),
         userId: user.id,
         origin: [body.origin[0], body.origin[1]],
+        rotation: body.rotation ?? 0,
       });
       return out;
     } catch (e) {
