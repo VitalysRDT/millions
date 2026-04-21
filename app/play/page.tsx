@@ -50,8 +50,8 @@ export default function PlayHubPage() {
   };
 
   const join = async () => {
-    const code = joinCode.trim().toUpperCase();
-    if (code.length !== 6) return;
+    const code = joinCode.trim();
+    if (code.length !== 4 || !/^\d{4}$/.test(code)) return;
     setJoining(true);
     setError(null);
     try {
@@ -174,15 +174,17 @@ export default function PlayHubPage() {
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value.toUpperCase().slice(0, 6))}
-              placeholder="CODE"
-              maxLength={6}
+              onChange={(e) => setJoinCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              placeholder="0000"
+              maxLength={4}
               className="input-field flex-1"
             />
             <button
               onClick={join}
-              disabled={joining || joinCode.length !== 6}
+              disabled={joining || joinCode.length !== 4}
               className="btn btn-primary"
               style={{ padding: "14px 24px" }}
             >
