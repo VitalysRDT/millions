@@ -13,6 +13,7 @@ import { Avatar } from "@/components/common/avatar";
 import { nanoid } from "nanoid";
 import { expandPattern } from "@/lib/games/battleship/shot-resolver";
 import { useCountdown } from "@/hooks/use-countdown";
+import { Check, RotateCcw, Undo2 } from "lucide-react";
 import Link from "next/link";
 
 interface MyShipsResponse {
@@ -39,6 +40,8 @@ export function BattleView({
 
   const [pendingChoice, setPendingChoice] = useState<number | null>(null);
   const [hover, setHover] = useState<[number, number] | null>(null);
+  const [aim, setAim] = useState<[number, number] | null>(null);
+  const [aimHistory, setAimHistory] = useState<[number, number][]>([]);
   const [busy, setBusy] = useState(false);
   const idemRef = useRef<string>(nanoid());
   const lastTurnRef = useRef<number>(bs.turnNumber);
@@ -50,8 +53,18 @@ export function BattleView({
       lastTurnRef.current = bs.turnNumber;
       idemRef.current = nanoid();
       setPendingChoice(null);
+      setAim(null);
+      setAimHistory([]);
     }
   }, [bs.turnNumber]);
+
+  // Reset aim when leaving shooting phase
+  useEffect(() => {
+    if (!shootMode) {
+      setAim(null);
+      setAimHistory([]);
+    }
+  }, [shootMode]);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -68,10 +81,21 @@ export function BattleView({
     for (const [x, y] of ship.cells) myShipCells.add(`${x},${y}`);
   }
 
+  const reward = bs.currentQuestion?.patternReward ?? "single";
+  const aimCells: [number, number][] = aim ? expandPattern(aim, reward) : [];
+  const hoverCells: [number, number][] = shootMode && hover && !aim ? expandPattern(hover, reward) : [];
+  const highlightCells = aim ? aimCells : hoverCells;
+
   const enemyGrid: GridCellState[][] = (() => {
     const g = emptyGrid();
     for (const c of bs.publicGrids[opponent.userId] ?? []) {
       g[c.x]![c.y] = c.result === "miss" ? "miss" : c.result === "sunk" ? "sunk" : "hit";
+    }
+    // Overlay aim cells (when locked in)
+    if (aim) {
+      for (const [x, y] of aimCells) {
+        if (g[x]![y] === "empty") g[x]![y] = "aim";
+      }
     }
     return g;
   })();
@@ -89,9 +113,6 @@ export function BattleView({
     }
     return g;
   })();
-
-  const reward = bs.currentQuestion?.patternReward ?? "single";
-  const previewCells: [number, number][] = shootMode && hover ? expandPattern(hover, reward) : [];
 
   const askQuestion = async (difficulty: number) => {
     setBusy(true);
@@ -118,13 +139,21 @@ export function BattleView({
     }
   };
 
-  const fireAt = async (x: number, y: number) => {
+  const onCellClickEnemy = (x: number, y: number) => {
     if (!shootMode) return;
-    if (busy) return;
+    // "drag & drop" simplified to tap-to-aim. Only empty cells are valid targets.
+    const already = bs.publicGrids[opponent.userId] ?? [];
+    if (already.some((c) => c.x === x && c.y === y)) return;
+    if (aim) setAimHistory((h) => [...h, aim]);
+    setAim([x, y]);
+  };
+
+  const confirmShot = async () => {
+    if (!aim || busy) return;
     setBusy(true);
     try {
       await postJson(`/api/battleship/${state.code}/shoot`, {
-        origin: [x, y],
+        origin: [aim[0], aim[1]],
         clientIdemKey: idemRef.current + ":shot",
       });
     } catch (e) {
@@ -132,6 +161,23 @@ export function BattleView({
     } finally {
       setBusy(false);
     }
+  };
+
+  const clearAim = () => {
+    if (aim) setAimHistory((h) => [...h, aim]);
+    setAim(null);
+  };
+
+  const undoAim = () => {
+    setAimHistory((h) => {
+      if (h.length === 0) {
+        setAim(null);
+        return h;
+      }
+      const prev = h[h.length - 1]!;
+      setAim(prev);
+      return h.slice(0, -1);
+    });
   };
 
   // GAME OVER
@@ -213,10 +259,10 @@ export function BattleView({
           <Grid
             cells={enemyGrid}
             maxWidthPx={420}
-            onCellClick={shootMode ? fireAt : undefined}
+            onCellClick={shootMode ? onCellClickEnemy : undefined}
             onCellHover={(x, y) => setHover([x, y])}
             onCellLeave={() => setHover(null)}
-            highlight={previewCells}
+            highlight={highlightCells}
           />
         </div>
 
@@ -265,7 +311,12 @@ export function BattleView({
           <ShootPanel
             question={bs.currentQuestion as BattleshipQuestionPublic}
             deadlineAt={bs.deadlineAt}
-            correctIdx={bs.revealedCorrectIndex}
+            aim={aim}
+            aimHistoryLength={aimHistory.length}
+            onConfirm={confirmShot}
+            onClear={clearAim}
+            onUndo={undoAim}
+            busy={busy}
           />
         )}
 
@@ -289,31 +340,81 @@ export function BattleView({
   );
 }
 
-/** Shown when the player has answered correctly and must pick a cell. */
 function ShootPanel({
   question,
   deadlineAt,
-  correctIdx,
+  aim,
+  aimHistoryLength,
+  onConfirm,
+  onClear,
+  onUndo,
+  busy,
 }: {
   question: BattleshipQuestionPublic;
   deadlineAt: number;
-  correctIdx?: number;
+  aim: [number, number] | null;
+  aimHistoryLength: number;
+  onConfirm: () => void;
+  onClear: () => void;
+  onUndo: () => void;
+  busy: boolean;
 }) {
   const remaining = useCountdown(deadlineAt);
-  const letters = ["A", "B", "C", "D"] as const;
   const rewardLabel = patternLabel(question.patternReward);
+  const LETTERS = "ABCDEFGHIJ";
+
   return (
     <div className="text-center py-3 sm:py-4">
-      <div className="chip accent mb-3 inline-flex" style={{ color: "var(--good)", borderColor: "var(--good)", background: "oklch(72% 0.18 150 / 0.14)" }}>
+      <div
+        className="chip mb-3 inline-flex"
+        style={{
+          color: "var(--good)",
+          borderColor: "var(--good)",
+          background: "oklch(72% 0.18 150 / 0.14)",
+        }}
+      >
         ✓ Bonne réponse
-        {correctIdx !== undefined && <> · {letters[correctIdx]}</>}
       </div>
-      <div className="display mb-2" style={{ fontSize: "clamp(22px, 4vw, 28px)" }}>
-        Choisis une case à frapper
+      <div
+        className="display mb-2"
+        style={{ fontSize: "clamp(22px, 4vw, 28px)" }}
+      >
+        {aim ? "Confirme ton tir" : "Choisis une case à frapper"}
       </div>
-      <div className="muted text-sm mb-4">
-        Récompense : {rewardLabel}. Survole la grille ennemie pour voir la zone d'impact.
+      <div className="muted text-sm mb-5">
+        {aim
+          ? `Cible : ${LETTERS[aim[0]]}${aim[1] + 1} · ${rewardLabel}`
+          : `Tape une case de la grille ennemie. Récompense : ${rewardLabel}.`}
       </div>
+
+      <div className="flex flex-wrap gap-2.5 justify-center mb-4">
+        <button
+          onClick={onUndo}
+          disabled={aimHistoryLength === 0 || busy}
+          className="btn"
+        >
+          <Undo2 className="w-4 h-4" />
+          <span className="hidden sm:inline">Annuler</span>
+        </button>
+        <button
+          onClick={onClear}
+          disabled={!aim || busy}
+          className="btn"
+        >
+          <RotateCcw className="w-4 h-4" />
+          <span className="hidden sm:inline">Effacer cible</span>
+        </button>
+        <button
+          onClick={onConfirm}
+          disabled={!aim || busy}
+          className="btn btn-primary"
+          style={{ padding: "12px 22px" }}
+        >
+          <Check className="w-4 h-4" />
+          {busy ? "Tir…" : "Valider le tir"}
+        </button>
+      </div>
+
       <div
         className="mono inline-flex px-3 py-1.5 rounded-full text-sm"
         style={{

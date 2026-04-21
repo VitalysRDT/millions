@@ -2,7 +2,15 @@
 
 import { GRID_SIZE } from "@/lib/games/battleship/constants";
 
-export type GridCellState = "empty" | "ship" | "ship-preview" | "miss" | "hit" | "sunk";
+export type GridCellState =
+  | "empty"
+  | "ship"
+  | "ship-preview"
+  | "ship-invalid"
+  | "miss"
+  | "hit"
+  | "sunk"
+  | "aim";
 
 export interface GridProps {
   cells: GridCellState[][]; // [x][y]
@@ -39,6 +47,7 @@ export function Grid({
     >
       <div
         className="grid w-full"
+        data-bs-grid="true"
         style={{
           gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
           gap: 2,
@@ -82,6 +91,12 @@ export function Grid({
               } else if (c === "ship-preview") {
                 bg = "var(--accent-soft)";
                 border = "var(--accent-edge)";
+              } else if (c === "ship-invalid") {
+                bg = "oklch(65% 0.22 25 / 0.28)";
+                border = "var(--bad)";
+              } else if (c === "aim") {
+                bg = "var(--accent-soft)";
+                border = "var(--accent)";
               } else if (c === "miss") {
                 bg = "var(--ink-2)";
                 content = (
@@ -122,6 +137,8 @@ export function Grid({
               return (
                 <button
                   key={`${x}-${y}`}
+                  data-cell-x={x}
+                  data-cell-y={y}
                   onClick={() => onCellClick?.(x, y)}
                   onMouseEnter={() => onCellHover?.(x, y)}
                   className="aspect-square relative touch-manipulation flex items-center justify-center transition-all"
