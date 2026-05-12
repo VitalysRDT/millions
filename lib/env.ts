@@ -1,9 +1,8 @@
 import { z } from "zod";
 
 const EnvSchema = z.object({
-  DATABASE_URL: z.string().url(),
-  UPSTASH_REDIS_REST_URL: z.string().url(),
-  UPSTASH_REDIS_REST_TOKEN: z.string().min(8),
+  DATABASE_URL: z.string().min(1),
+  REDIS_URL: z.string().min(1),
   SESSION_SECRET: z.string().min(32, "SESSION_SECRET must be >= 32 chars"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 });

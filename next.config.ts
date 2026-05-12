@@ -1,11 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   reactStrictMode: true,
   experimental: {
     typedRoutes: false,
   },
-  serverExternalPackages: ["@neondatabase/serverless"],
+  serverExternalPackages: ["pg"],
 };
 
 export default nextConfig;

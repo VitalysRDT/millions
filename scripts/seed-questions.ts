@@ -7,7 +7,7 @@
  */
 import "dotenv/config";
 import { readFileSync } from "node:fs";
-import { neon } from "@neondatabase/serverless";
+import { Pool } from "pg";
 
 type RawQuestion = {
   id: number;
@@ -25,7 +25,7 @@ async function main() {
     console.error("DATABASE_URL not set");
     process.exit(1);
   }
-  const sql = neon(dbUrl);
+  const pool = new Pool({ connectionString: dbUrl });
 
   const path = process.argv[2] ?? "questions.json";
   console.log(`[seed] reading ${path}`);
@@ -74,7 +74,7 @@ async function main() {
                    VALUES ${values}
                    ON CONFLICT (id) DO NOTHING`;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (sql as any)(query, params);
+    await pool.query(query, params);
     inserted += slice.length;
     process.stdout.write(`\r[seed] ${inserted}/${valid.length}`);
   }
